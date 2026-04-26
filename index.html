@@ -4,14 +4,14 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Sarah Johnson Realty | Baltimore Real Estate</title>
-<!-- real-estate-template-v13.html — Calendly event_scheduled triggers success message -->
+<!-- real-estate-template-v14.html — Get Matched button wired to chatbot -->
 <!--
-  FILE:    real-estate-template-v13.html
-  VERSION: v13
+  FILE:    real-estate-template-v14.html
+  VERSION: v14
   UPDATED: 2026-04-26
-  CHANGES: Split showOK into showCalendly (widget) + showOK (success).
-           Success message now fires only after Calendly event_scheduled event.
-           Fallback: showOK fires immediately if Calendly not configured.
+  CHANGES: "Find My Match" button added to How It Works Step 2.
+           Opens chatbot pre-loaded with matching flow.
+           System prompt updated with match qualification instructions.
 -->
 <meta name="description" content="Find your dream home in Baltimore — chat with our AI assistant and book a showing instantly." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -116,6 +116,8 @@
   .step-icon { width: 52px; height: 52px; background: rgba(46,107,79,.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin-bottom: 20px; }
   .step h3 { font-family: 'Playfair Display', serif; font-size: 1.2rem; color: var(--brand); margin-bottom: 10px; }
   .step p { font-size: .9rem; color: var(--text-muted); line-height: 1.6; }
+  .step-action { display: inline-flex; align-items: center; gap: 6px; margin-top: 16px; background: var(--brand); color: #fff; border: none; border-radius: 8px; padding: 10px 18px; font-size: .82rem; font-weight: 500; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all .2s; }
+  .step-action:hover { background: var(--brand-mid); transform: translateY(-1px); }
 
   /* LISTINGS */
   .listings-section { background: var(--surface); }
@@ -413,7 +415,7 @@
   <p class="section-sub">No endless browsing, no waiting days for a callback. Just chat and we handle the rest.</p>
   <div class="steps">
     <div class="step"><div class="step-num">1</div><div class="step-icon">💬</div><h3>Chat with AI</h3><p>Tell our assistant your budget, preferred neighborhood, and must-haves. It listens and learns.</p></div>
-    <div class="step"><div class="step-num">2</div><div class="step-icon">🏠</div><h3>Get Matched</h3><p>Receive curated listings that fit your criteria — not hundreds of irrelevant results.</p></div>
+    <div class="step"><div class="step-num">2</div><div class="step-icon">🏠</div><h3>Get Matched</h3><p>Receive curated listings that fit your criteria — not hundreds of irrelevant results.</p><button class="step-action" onclick="startMatchFlow()">Find My Match →</button></div>
     <div class="step"><div class="step-num">3</div><div class="step-icon">📅</div><h3>Book a Showing</h3><p>Schedule a private showing instantly from the chat window. No phone tag required.</p></div>
   </div>
 </section>
@@ -769,6 +771,12 @@ function buildSystemPrompt() {
     "   output a warm sentence like Great, let me grab your details! then on the VERY NEXT LINE output exactly: SHOW_LEAD_FORM\n" +
     "5. If they ask to see all listings on the page, output exactly: SHOW_ALL_LISTINGS\n" +
     "6. If they ask to see listing cards in the chat, output exactly: SHOW_LISTING_CARDS\n\n" +
+    "MATCH FLOW (triggered when visitor says they want to find a matching home):\n" +
+    "- Ask ONE qualifying question at a time in this order: budget → bedrooms → preferred neighborhood → timeline.\n" +
+    "- After all four answers, respond with a short personalized summary: which listings match and why.\n" +
+    "- Then output SHOW_LISTING_CARDS to display the matching cards.\n" +
+    "- Then ask: Would you like to book a showing for any of these?\n" +
+    "- Only show listings that genuinely match their criteria. If none match, say so honestly and ask if they'd like to adjust.\n\n" +
     "RULES:\n" +
     "- Never make up listings. Only reference the ones provided below.\n" +
     "- Never ask for phone number or email yourself -- the form handles that.\n" +
@@ -1159,6 +1167,15 @@ function openChatWithNeighborhood(neighborhood) {
   openChat();
   setTimeout(function() {
     sendMessage("I'm interested in homes in " + neighborhood);
+  }, chatOpened ? 200 : 2600);
+}
+
+// ── GET MATCHED FLOW ──────────────────────────────────────────
+// Triggered by "Find My Match" button on How It Works Step 2
+function startMatchFlow() {
+  openChat();
+  setTimeout(function() {
+    sendMessage("Help me find a matching home");
   }, chatOpened ? 200 : 2600);
 }
 
