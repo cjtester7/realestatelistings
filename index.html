@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Sarah Johnson Realty | Baltimore Real Estate</title>
-<!-- real-estate-template-v10.html — No chips when opening chat from listing card -->
+<!-- real-estate-template-v11.html — Dev Settings panel for config URLs -->
 <meta name="description" content="Find your dream home in Baltimore — chat with our AI assistant and book a showing instantly." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
@@ -225,6 +225,46 @@
   .calendly-fallback { padding: 18px; text-align: center; }
   .calendly-fallback a { color: var(--brand); font-weight: 600; font-size: .9rem; }
 
+  /* DEV SETTINGS PANEL */
+  .dev-badge { display: none; background: #f59e0b; color: #000; font-size: .7rem; font-weight: 700; padding: 3px 10px; border-radius: 20px; letter-spacing: .04em; text-transform: uppercase; }
+  .dev-badge.visible { display: inline-flex; align-items: center; gap: 5px; }
+  .settings-btn { background: transparent; border: 1.5px solid rgba(0,0,0,.12); border-radius: 8px; padding: 8px 14px; font-size: .82rem; font-family: 'DM Sans', sans-serif; color: var(--text-muted); cursor: pointer; transition: all .15s; display: none; align-items: center; gap: 6px; }
+  .settings-btn.visible { display: inline-flex; }
+  .settings-btn:hover { border-color: var(--brand); color: var(--brand); }
+
+  .settings-overlay { position: fixed; inset: 0; z-index: 1100; background: rgba(0,0,0,.45); backdrop-filter: blur(4px); opacity: 0; pointer-events: none; transition: opacity .25s; }
+  .settings-overlay.open { opacity: 1; pointer-events: all; }
+  .settings-panel { position: fixed; top: 0; right: 0; bottom: 0; z-index: 1101; width: 420px; background: var(--surface); box-shadow: -8px 0 40px rgba(0,0,0,.16); display: flex; flex-direction: column; transform: translateX(100%); transition: transform .3s cubic-bezier(.22,1,.36,1); }
+  .settings-panel.open { transform: translateX(0); }
+  .settings-header { background: var(--brand); padding: 22px 24px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+  .settings-header-left { display: flex; flex-direction: column; gap: 3px; }
+  .settings-title { color: #fff; font-family: 'Playfair Display', serif; font-size: 1.1rem; font-weight: 700; }
+  .settings-subtitle { color: rgba(255,255,255,.6); font-size: .75rem; }
+  .settings-close { background: none; border: none; color: rgba(255,255,255,.7); cursor: pointer; font-size: 1.3rem; padding: 4px; transition: color .15s; }
+  .settings-close:hover { color: #fff; }
+  .settings-body { flex: 1; overflow-y: auto; padding: 28px 24px; display: flex; flex-direction: column; gap: 24px; }
+  .settings-group { display: flex; flex-direction: column; gap: 8px; }
+  .settings-label { font-size: .78rem; font-weight: 600; color: var(--text-muted); letter-spacing: .06em; text-transform: uppercase; display: flex; align-items: center; gap: 8px; }
+  .settings-label-tag { background: rgba(26,58,42,.08); color: var(--brand); border-radius: 4px; padding: 2px 7px; font-size: .68rem; font-weight: 700; letter-spacing: .04em; }
+  .settings-input { width: 100%; border: 1.5px solid #e5e5e5; border-radius: 10px; padding: 11px 14px; font-size: .875rem; font-family: 'DM Sans', sans-serif; color: var(--text); outline: none; transition: border-color .2s; background: #fafafa; }
+  .settings-input:focus { border-color: var(--brand); background: #fff; box-shadow: 0 0 0 3px rgba(26,58,42,.08); }
+  .settings-hint { font-size: .75rem; color: var(--text-muted); line-height: 1.5; }
+  .settings-hint code { background: #f0f0f0; padding: 1px 6px; border-radius: 4px; font-family: monospace; font-size: .78rem; color: var(--brand); }
+  .settings-divider { border: none; border-top: 1px solid #eee; margin: 4px 0; }
+  .settings-status { font-size: .78rem; border-radius: 8px; padding: 10px 14px; display: none; }
+  .settings-status.ok  { display: block; background: rgba(74,153,112,.1); color: var(--brand-mid); border: 1px solid rgba(74,153,112,.25); }
+  .settings-status.err { display: block; background: rgba(239,68,68,.08); color: #dc2626; border: 1px solid rgba(239,68,68,.2); }
+  .settings-footer { padding: 20px 24px; border-top: 1px solid #eee; display: flex; gap: 12px; flex-shrink: 0; }
+  .settings-save { flex: 1; background: var(--brand); color: #fff; border: none; border-radius: 10px; padding: 13px; font-family: 'Syne', sans-serif; font-size: .95rem; font-weight: 700; cursor: pointer; transition: background .2s; }
+  .settings-save:hover { background: var(--brand-mid); }
+  .settings-clear { background: transparent; color: var(--text-muted); border: 1.5px solid #e5e5e5; border-radius: 10px; padding: 13px 18px; font-family: 'DM Sans', sans-serif; font-size: .875rem; cursor: pointer; transition: all .15s; }
+  .settings-clear:hover { border-color: #dc2626; color: #dc2626; }
+  .settings-warn { background: rgba(245,158,11,.08); border: 1px solid rgba(245,158,11,.25); border-radius: 10px; padding: 12px 14px; font-size: .78rem; color: #92400e; line-height: 1.55; }
+
+  @media (max-width: 480px) {
+    .settings-panel { width: 100%; }
+  }
+
   @keyframes bounce { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-6px); } }
 
   /* RESPONSIVE */
@@ -251,7 +291,11 @@
 <!-- NAV -->
 <nav>
   <a href="#" class="nav-logo">Sarah Johnson Realty</a>
-  <button class="nav-cta" onclick="openChat()">💬 Chat Now</button>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <span class="dev-badge" id="dev-badge">⚠️ Dev Mode</span>
+    <button class="settings-btn" id="settings-btn" onclick="openSettings()">⚙️ Settings</button>
+    <button class="nav-cta" onclick="openChat()">💬 Chat Now</button>
+  </div>
 </nav>
 
 <!-- HERO -->
@@ -388,6 +432,73 @@
   <span>Powered by <a href="#">AI Assistant</a> — <a href="mailto:chris_jaffier@thinkezly.com">Want this for your business? →</a></span>
 </footer>
 
+<!-- DEV SETTINGS OVERLAY + PANEL -->
+<div class="settings-overlay" id="settings-overlay" onclick="closeSettings()"></div>
+<div class="settings-panel" id="settings-panel">
+  <div class="settings-header">
+    <div class="settings-header-left">
+      <div class="settings-title">Dev Settings</div>
+      <div class="settings-subtitle">Saved to localStorage · Not visible to clients</div>
+    </div>
+    <button class="settings-close" onclick="closeSettings()">✕</button>
+  </div>
+  <div class="settings-body">
+
+    <div class="settings-warn">
+      ⚠️ Set <code style="background:rgba(0,0,0,.1);padding:1px 5px;border-radius:3px;font-family:monospace;">DEV_MODE: false</code> in CONFIG before delivering to a client. This panel will disappear.
+    </div>
+
+    <div class="settings-group">
+      <div class="settings-label">
+        <span>Apps Script URL</span>
+        <span class="settings-label-tag">scriptUrl</span>
+      </div>
+      <input class="settings-input" id="si-scriptUrl" type="url" placeholder="https://script.google.com/macros/s/.../exec" />
+      <div class="settings-hint">Your deployed Google Apps Script web app URL. Fetches live listings from your Google Sheet.</div>
+    </div>
+
+    <hr class="settings-divider" />
+
+    <div class="settings-group">
+      <div class="settings-label">
+        <span>Calendly URL</span>
+        <span class="settings-label-tag">calendlyUrl</span>
+      </div>
+      <input class="settings-input" id="si-calendlyUrl" type="url" placeholder="https://calendly.com/your-name/showing" />
+      <div class="settings-hint">Your Calendly event link. Renders as an inline booking widget inside the chat after a visitor submits the lead form.</div>
+    </div>
+
+    <hr class="settings-divider" />
+
+    <div class="settings-group">
+      <div class="settings-label">
+        <span>n8n Webhook URL</span>
+        <span class="settings-label-tag">webhookUrl</span>
+      </div>
+      <input class="settings-input" id="si-webhookUrl" type="url" placeholder="https://your-n8n.app/webhook/..." />
+      <div class="settings-hint">Receives lead form submissions. Fires a POST with name, phone, email, and full conversation history.</div>
+    </div>
+
+    <hr class="settings-divider" />
+
+    <div class="settings-group">
+      <div class="settings-label">
+        <span>YouTube Video ID</span>
+        <span class="settings-label-tag">youTubeId</span>
+      </div>
+      <input class="settings-input" id="si-youTubeId" type="text" placeholder="e.g. dQw4w9WgXcQ" />
+      <div class="settings-hint">The ID from your YouTube URL: <code>youtube.com/watch?v=<strong>THIS_PART</strong></code>. Shows a "Watch" button on the hero media panel.</div>
+    </div>
+
+    <div class="settings-status" id="settings-status"></div>
+
+  </div>
+  <div class="settings-footer">
+    <button class="settings-clear" onclick="clearSettings()">Clear All</button>
+    <button class="settings-save" onclick="saveSettings()">Save &amp; Apply</button>
+  </div>
+</div>
+
 <!-- CHAT TOGGLE -->
 <button id="chat-toggle" onclick="toggleChat()" aria-label="Open chat">
   <span id="chat-icon">💬</span>
@@ -419,21 +530,34 @@
 
 <script>
 // ============================================================
-// real-estate-template-v7.html
+// real-estate-template-v11.html
 // To deploy for a new client update the CONFIG block below
 // and the hardcoded text in the HTML above.
+// Set DEV_MODE: false before client delivery — hides settings UI.
 // ============================================================
 var CONFIG = {
+  DEV_MODE:    true,
   agentName:   "Sarah Johnson",
   city:        "Baltimore",
   phone:       "(410) 555-0192",
   email:       "sarah@sarahjohnsonrealty.com",
-  scriptUrl:   "Replace YOUR_GOOGLE_SHEET_URL_HERE",
+  scriptUrl:   "1sp0ONuUdDrpdddKP5hgjrYUkVqq2EYg1oJRZIl3Pe-A/edit",
   calendlyUrl: "https://calendly.com/cjtester7/new-meeting",
   webhookUrl:  "https://REPLACE_YOUR_N8N_WEBHOOK",
-  youTubeId:   "REPLACE_YOUTUBE_VIDEO_ID"  // e.g. "dQw4w9WgXcQ" — leave blank to hide button
-  // API key is now in Netlify environment variables — not needed here
+  youTubeId:   "REPLACE_YOUTUBE_VIDEO_ID"
+  // API key is in Netlify environment variables
 };
+
+// Load saved dev settings from localStorage
+(function() {
+  if (!CONFIG.DEV_MODE) return;
+  try {
+    var saved = JSON.parse(localStorage.getItem("devConfig") || "{}");
+    ["scriptUrl","calendlyUrl","webhookUrl","youTubeId"].forEach(function(k) {
+      if (saved[k] && saved[k].trim() !== "") CONFIG[k] = saved[k].trim();
+    });
+  } catch(e) {}
+})();
 
 // ── LISTINGS ──────────────────────────────────────────────────
 var allListings    = [];
@@ -1034,10 +1158,106 @@ function exportConversation() {
   URL.revokeObjectURL(a.href);
 }
 
-// ── INIT
+// ── DEV SETTINGS PANEL ───────────────────────────────────────
+function openSettings() {
+  // Populate fields with current CONFIG values
+  var fields = ["scriptUrl","calendlyUrl","webhookUrl","youTubeId"];
+  fields.forEach(function(k) {
+    var el = document.getElementById("si-" + k);
+    if (el) el.value = CONFIG[k] || "";
+  });
+  var status = document.getElementById("settings-status");
+  if (status) { status.textContent = ""; status.className = "settings-status"; }
+  document.getElementById("settings-overlay").classList.add("open");
+  document.getElementById("settings-panel").classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+
+function closeSettings() {
+  document.getElementById("settings-overlay").classList.remove("open");
+  document.getElementById("settings-panel").classList.remove("open");
+  document.body.style.overflow = "";
+}
+
+function saveSettings() {
+  var fields = ["scriptUrl","calendlyUrl","webhookUrl","youTubeId"];
+  var saved  = {};
+  fields.forEach(function(k) {
+    var el = document.getElementById("si-" + k);
+    saved[k] = el ? el.value.trim() : "";
+  });
+
+  // Persist to localStorage
+  localStorage.setItem("devConfig", JSON.stringify(saved));
+
+  // Apply to live CONFIG immediately
+  fields.forEach(function(k) {
+    if (saved[k] !== "") CONFIG[k] = saved[k];
+  });
+
+  // Show status
+  var status = document.getElementById("settings-status");
+  status.textContent = "Settings saved. Reloading listings and applying changes...";
+  status.className = "settings-status ok";
+
+  // Re-init affected components
+  setTimeout(function() {
+    fetchListings();
+    initYouTubeBtn();
+    closeSettings();
+    updateDevBadge();
+  }, 800);
+}
+
+function clearSettings() {
+  if (!confirm("Clear all dev settings and restore placeholders?")) return;
+  localStorage.removeItem("devConfig");
+
+  // Restore placeholder values
+  CONFIG.scriptUrl   = "Replace YOUR_GOOGLE_SHEET_URL_HERE";
+  CONFIG.calendlyUrl = "https://calendly.com/REPLACE_YOUR_LINK";
+  CONFIG.webhookUrl  = "https://REPLACE_YOUR_N8N_WEBHOOK";
+  CONFIG.youTubeId   = "REPLACE_YOUTUBE_VIDEO_ID";
+
+  // Clear input fields
+  ["scriptUrl","calendlyUrl","webhookUrl","youTubeId"].forEach(function(k) {
+    var el = document.getElementById("si-" + k);
+    if (el) el.value = "";
+  });
+
+  var status = document.getElementById("settings-status");
+  status.textContent = "Settings cleared. Placeholders restored.";
+  status.className = "settings-status err";
+
+  fetchListings();
+  initYouTubeBtn();
+  updateDevBadge();
+}
+
+function updateDevBadge() {
+  if (!CONFIG.DEV_MODE) return;
+  var hasAny =
+    (CONFIG.scriptUrl   && CONFIG.scriptUrl.indexOf("REPLACE")   === -1) ||
+    (CONFIG.calendlyUrl && CONFIG.calendlyUrl.indexOf("REPLACE")  === -1) ||
+    (CONFIG.webhookUrl  && CONFIG.webhookUrl.indexOf("REPLACE")   === -1) ||
+    (CONFIG.youTubeId   && CONFIG.youTubeId.indexOf("REPLACE")    === -1);
+  var badge = document.getElementById("dev-badge");
+  if (badge) badge.className = "dev-badge" + (hasAny ? " visible" : "");
+}
+
+function initDevSettings() {
+  if (!CONFIG.DEV_MODE) return;
+  // Show settings button
+  var btn = document.getElementById("settings-btn");
+  if (btn) btn.className = "settings-btn visible";
+  updateDevBadge();
+}
+
+// ── INIT ──────────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", function() {
   fetchListings();
   initYouTubeBtn();
+  initDevSettings();
 });
 </script>
 </body>
