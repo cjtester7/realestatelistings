@@ -4,10 +4,13 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Sarah Johnson Realty | Baltimore Real Estate</title>
-<!-- real-estate-template-v8.html — Single-question system prompt rule -->
+<!-- real-estate-template-v9.html — Inline Calendly booking widget in chat -->
 <meta name="description" content="Find your dream home in Baltimore — chat with our AI assistant and book a showing instantly." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+<!-- Calendly embed widget -->
+<link href="https://assets.calendly.com/assets/external/widget.css" rel="stylesheet" />
+<script src="https://assets.calendly.com/assets/external/widget.js" type="text/javascript" async></script>
 <style>
   :root {
     --brand:       #1a3a2a;
@@ -214,6 +217,14 @@
   .clc-details { display: flex; gap: 12px; font-size: .78rem; color: var(--text-muted); flex-wrap: wrap; }
   .clc-book { display: block; width: 100%; margin-top: 10px; background: var(--brand); color: #fff; border: none; border-radius: 8px; padding: 9px; font-family: 'DM Sans', sans-serif; font-size: .82rem; cursor: pointer; }
 
+  /* CALENDLY INLINE WIDGET */
+  .calendly-panel { width: 100%; margin-top: 8px; border-radius: 14px; overflow: hidden; border: 1px solid rgba(0,0,0,.08); background: #fff; }
+  .calendly-panel-header { background: var(--brand); color: #fff; padding: 12px 16px; font-size: .85rem; font-weight: 500; display: flex; align-items: center; gap: 8px; }
+  .calendly-panel-header span { opacity: .8; font-size: .78rem; }
+  .calendly-inline-container { width: 100%; height: 580px; }
+  .calendly-fallback { padding: 18px; text-align: center; }
+  .calendly-fallback a { color: var(--brand); font-weight: 600; font-size: .9rem; }
+
   @keyframes bounce { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-6px); } }
 
   /* RESPONSIVE */
@@ -417,8 +428,8 @@ var CONFIG = {
   city:        "Baltimore",
   phone:       "(410) 555-0192",
   email:       "sarah@sarahjohnsonrealty.com",
-  scriptUrl:   "Replace YOUR_GOOGLE_SHEET_URL_HERE",
-  calendlyUrl: "https://calendly.com/REPLACE_YOUR_LINK",
+  scriptUrl:   "1sp0ONuUdDrpdddKP5hgjrYUkVqq2EYg1oJRZIl3Pe-A/edit",
+  calendlyUrl: "https://calendly.com/cjtester7/new-meeting",
   webhookUrl:  "https://REPLACE_YOUR_N8N_WEBHOOK",
   youTubeId:   "REPLACE_YOUTUBE_VIDEO_ID"  // e.g. "dQw4w9WgXcQ" — leave blank to hide button
   // API key is now in Netlify environment variables — not needed here
@@ -707,17 +718,65 @@ function subLead() {
 
 function showOK(name) {
   var firstName = name ? name.split(" ")[0] : "";
+
+  // ── Confirmation message ──────────────────────────────────
   var w = document.createElement("div"); w.className = "cm bot";
   w.innerHTML =
     '<div class="success-msg">' +
     '  <div class="success-icon">🎉</div>' +
     '  <div class="success-title">You\'re all set' + (firstName ? ", " + firstName : "") + '!</div>' +
-    '  <div class="success-sub">' +
-         CONFIG.agentName + ' will reach out shortly to confirm your showing time.<br><br>' +
-    '    <a href="' + CONFIG.calendlyUrl + '" target="_blank" style="color:var(--brand-mid);font-weight:600">Pick your exact time slot</a>' +
-    '  </div>' +
+    '  <div class="success-sub">' + CONFIG.agentName + ' will confirm your showing. Pick a time below.</div>' +
     '</div>';
-  mEl().appendChild(w); mEl().scrollTop = mEl().scrollHeight;
+  mEl().appendChild(w);
+
+  // ── Inline Calendly widget ────────────────────────────────
+  var hasCalendly = CONFIG.calendlyUrl && CONFIG.calendlyUrl.indexOf("REPLACE") === -1;
+  var wCal = document.createElement("div"); wCal.className = "cm bot";
+  wCal.style.width = "100%";
+
+  if (hasCalendly && typeof Calendly !== "undefined") {
+    // Calendly script loaded — render inline widget
+    var panel = document.createElement("div"); panel.className = "calendly-panel";
+    panel.innerHTML =
+      '<div class="calendly-panel-header">📅 Pick your showing time <span>Powered by Calendly</span></div>' +
+      '<div class="calendly-inline-container" id="calendly-inline"></div>';
+    wCal.appendChild(panel);
+    mEl().appendChild(wCal);
+    mEl().scrollTop = mEl().scrollHeight;
+
+    // Init Calendly widget after DOM insertion
+    setTimeout(function() {
+      Calendly.initInlineWidget({
+        url:           CONFIG.calendlyUrl,
+        parentElement: document.getElementById("calendly-inline"),
+        prefill: {},
+        utm: {}
+      });
+    }, 100);
+
+  } else if (hasCalendly) {
+    // Calendly script not yet ready — fallback link
+    wCal.innerHTML =
+      '<div class="calendly-panel">' +
+      '  <div class="calendly-panel-header">📅 Pick your showing time</div>' +
+      '  <div class="calendly-fallback">' +
+      '    <a href="' + CONFIG.calendlyUrl + '" target="_blank">Open booking calendar →</a>' +
+      '  </div>' +
+      '</div>';
+    mEl().appendChild(wCal);
+
+  } else {
+    // No Calendly URL configured — show placeholder
+    wCal.innerHTML =
+      '<div class="calendly-panel">' +
+      '  <div class="calendly-fallback" style="color:var(--text-muted);font-size:.85rem;">' +
+      '    Booking calendar not configured yet. ' + CONFIG.agentName + ' will reach out shortly!' +
+      '  </div>' +
+      '</div>';
+    mEl().appendChild(wCal);
+  }
+
+  mEl().scrollTop = mEl().scrollHeight;
   var b = document.getElementById("chat-badge");
   if (b) b.style.display = "none";
 }
@@ -902,6 +961,9 @@ function newConversation() {
   apiLocked    = false;
   var msgs = document.getElementById("chat-messages");
   if (msgs) msgs.innerHTML = "";
+  // Clean up any Calendly inline widget
+  var cal = document.getElementById("calendly-inline");
+  if (cal) cal.innerHTML = "";
   setInputDisabled(false);
   setTimeout(startChat, 200);
 }
