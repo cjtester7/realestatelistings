@@ -1,7 +1,8 @@
 // netlify/functions/chat.js
-// Serverless proxy for Anthropic API — v1
+// Serverless proxy for Anthropic API — v2
 // Keeps the API key server-side; browser calls /.netlify/functions/chat
 // Environment variable required: ANTHROPIC_API_KEY
+// v2: Single-question rule enforced in server-side system prompt fallback
 
 exports.handler = async function(event) {
 
@@ -43,13 +44,31 @@ exports.handler = async function(event) {
     };
   }
 
+  // If no system prompt was sent from the browser, use this server-side fallback.
+  // This mirrors the PERSONALITY rules in buildSystemPrompt() in the HTML file.
+  // Keep both in sync when updating prompt rules.
+  if (!system) {
+    system = [
+      "You are an AI assistant for a real estate agent.",
+      "",
+      "PERSONALITY:",
+      "- Keep replies to 1-2 sentences maximum. Ask only ONE question per response. Never stack multiple questions in the same message.",
+      "- Never use bullet points or markdown -- plain conversational text only.",
+      "",
+      "GOAL: Qualify the visitor (buying or selling, budget, timeline) and guide them toward booking a showing.",
+      "When ready to capture their details, output exactly: SHOW_LEAD_FORM",
+      "When they want to see listings in chat, output exactly: SHOW_LISTING_CARDS",
+      "When they want to see all listings on the page, output exactly: SHOW_ALL_LISTINGS"
+    ].join("\n");
+  }
+
   // Build Anthropic request payload
   var payload = {
     model:      "claude-sonnet-4-20250514",
     max_tokens: 1000,
+    system:     system,
     messages:   messages
   };
-  if (system) payload.system = system;
 
   // Call Anthropic API
   try {
