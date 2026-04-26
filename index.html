@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Sarah Johnson Realty | Baltimore Real Estate</title>
-<!-- real-estate-template-v7.html — Compelling hero, media panel, chat controls -->
+<!-- real-estate-template-v8.html — Single-question system prompt rule -->
 <meta name="description" content="Find your dream home in Baltimore — chat with our AI assistant and book a showing instantly." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
@@ -582,7 +582,7 @@ function buildSystemPrompt() {
   return "You are an AI assistant for " + CONFIG.agentName + ", a real estate agent in " + CONFIG.city + ".\n" +
     "Your job is to warmly greet visitors, understand their needs, and guide them toward booking a showing.\n\n" +
     "PERSONALITY:\n" +
-    "- Friendly, professional, and concise. Keep replies to 2-3 sentences maximum.\n" +
+    "- Keep replies to 1-2 sentences maximum. Ask only ONE question per response. Never stack multiple questions in the same message.\n" +
     "- Never use bullet points or markdown -- plain conversational text only.\n" +
     "- Use the visitor's name if they share it.\n\n" +
     "CONVERSATION GOAL:\n" +
