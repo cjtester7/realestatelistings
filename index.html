@@ -4,7 +4,15 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Sarah Johnson Realty | Baltimore Real Estate</title>
-<!-- real-estate-template-v12.html — Centered modal chat window -->
+<!-- real-estate-template-v13.html — Calendly event_scheduled triggers success message -->
+<!--
+  FILE:    real-estate-template-v13.html
+  VERSION: v13
+  UPDATED: 2026-04-26
+  CHANGES: Split showOK into showCalendly (widget) + showOK (success).
+           Success message now fires only after Calendly event_scheduled event.
+           Fallback: showOK fires immediately if Calendly not configured.
+-->
 <meta name="description" content="Find your dream home in Baltimore — chat with our AI assistant and book a showing instantly." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
@@ -870,29 +878,38 @@ function subLead() {
   }
 
   CS.booked = true;
-  showOK(name);
+  showCalendly(name);
 }
 
-function showOK(name) {
-  var firstName = name ? name.split(" ")[0] : "";
-
-  // ── Confirmation message ──────────────────────────────────
-  var w = document.createElement("div"); w.className = "cm bot";
-  w.innerHTML =
-    '<div class="success-msg">' +
-    '  <div class="success-icon">🎉</div>' +
-    '  <div class="success-title">You\'re all set' + (firstName ? ", " + firstName : "") + '!</div>' +
-    '  <div class="success-sub">' + CONFIG.agentName + ' will confirm your showing. Pick a time below.</div>' +
-    '</div>';
-  mEl().appendChild(w);
-
-  // ── Inline Calendly widget ────────────────────────────────
+// ── LEAD FORM SUBMIT → SHOW CALENDLY WIDGET ──────────────────
+// Called after lead form submit. Shows Calendly inline widget.
+// showOK() is called only after Calendly fires event_scheduled.
+function showCalendly(name) {
   var hasCalendly = CONFIG.calendlyUrl && CONFIG.calendlyUrl.indexOf("REPLACE") === -1;
+  var calReady    = hasCalendly && typeof Calendly !== "undefined";
+
+  if (!hasCalendly) {
+    // No Calendly configured — show success immediately
+    showOK(name);
+    return;
+  }
+
+  // Store name for success message after booking
+  CS._pendingName = name || "";
+
+  // ── Prompt message ──────────────────────────────────────
+  var wPre = document.createElement("div"); wPre.className = "cm bot";
+  wPre.innerHTML =
+    '<div class="cm-bubble" style="background:#f1f5f2;border-bottom-left-radius:4px;">' +
+    '  Great! Pick a date and time below to confirm your showing.' +
+    '</div>';
+  mEl().appendChild(wPre);
+
+  // ── Calendly widget ──────────────────────────────────────
   var wCal = document.createElement("div"); wCal.className = "cm bot";
   wCal.style.width = "100%";
 
-  if (hasCalendly && typeof Calendly !== "undefined") {
-    // Calendly script loaded — render inline widget
+  if (calReady) {
     var panel = document.createElement("div"); panel.className = "calendly-panel";
     panel.innerHTML =
       '<div class="calendly-panel-header">📅 Pick your showing time <span>Powered by Calendly</span></div>' +
@@ -901,18 +918,17 @@ function showOK(name) {
     mEl().appendChild(wCal);
     mEl().scrollTop = mEl().scrollHeight;
 
-    // Init Calendly widget after DOM insertion
     setTimeout(function() {
       Calendly.initInlineWidget({
         url:           CONFIG.calendlyUrl,
         parentElement: document.getElementById("calendly-inline"),
-        prefill: {},
-        utm: {}
+        prefill:       {},
+        utm:           {}
       });
     }, 100);
 
-  } else if (hasCalendly) {
-    // Calendly script not yet ready — fallback link
+  } else {
+    // Calendly script not ready — fallback link
     wCal.innerHTML =
       '<div class="calendly-panel">' +
       '  <div class="calendly-panel-header">📅 Pick your showing time</div>' +
@@ -921,22 +937,37 @@ function showOK(name) {
       '  </div>' +
       '</div>';
     mEl().appendChild(wCal);
-
-  } else {
-    // No Calendly URL configured — show placeholder
-    wCal.innerHTML =
-      '<div class="calendly-panel">' +
-      '  <div class="calendly-fallback" style="color:var(--text-muted);font-size:.85rem;">' +
-      '    Booking calendar not configured yet. ' + CONFIG.agentName + ' will reach out shortly!' +
-      '  </div>' +
-      '</div>';
-    mEl().appendChild(wCal);
+    // Can't detect booking completion via link — show success after delay
+    setTimeout(function() { showOK(name); }, 2000);
   }
 
   mEl().scrollTop = mEl().scrollHeight;
   var b = document.getElementById("chat-badge");
   if (b) b.style.display = "none";
 }
+
+// ── SUCCESS MESSAGE — fires after Calendly event_scheduled ────
+function showOK(name) {
+  var firstName = (name || CS._pendingName || "").split(" ")[0];
+  var w = document.createElement("div"); w.className = "cm bot";
+  w.innerHTML =
+    '<div class="success-msg">' +
+    '  <div class="success-icon">🎉</div>' +
+    '  <div class="success-title">You\'re all set' + (firstName ? ", " + firstName : "") + '!</div>' +
+    '  <div class="success-sub">' +
+         CONFIG.agentName + ' will send you a confirmation shortly. See you at the showing!</div>' +
+    '</div>';
+  mEl().appendChild(w);
+  mEl().scrollTop = mEl().scrollHeight;
+}
+
+// ── CALENDLY EVENT LISTENER ───────────────────────────────────
+// Fires when visitor completes a booking in the Calendly widget
+window.addEventListener("message", function(e) {
+  if (e.data && e.data.event && e.data.event === "calendly.event_scheduled") {
+    showOK(CS._pendingName || "");
+  }
+});
 
 // ── ANTHROPIC API CALL (proxied via Netlify Function)
 function callClaude(userText) {
@@ -1133,10 +1164,11 @@ function openChatWithNeighborhood(neighborhood) {
 
 // ── CONVERSATION CONTROLS ─────────────────────────────────────
 function newConversation() {
-  chatHistory  = [];
-  CS.formShown = false;
-  CS.booked    = false;
-  apiLocked    = false;
+  chatHistory    = [];
+  CS.formShown   = false;
+  CS.booked      = false;
+  CS._pendingName = "";
+  apiLocked      = false;
   var msgs = document.getElementById("chat-messages");
   if (msgs) msgs.innerHTML = "";
   var cal = document.getElementById("calendly-inline");
