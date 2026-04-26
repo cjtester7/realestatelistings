@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Sarah Johnson Realty | Baltimore Real Estate</title>
-<!-- real-estate-template-v5.html — Anthropic-powered chatbot -->
+<!-- real-estate-template-v6.html — Netlify Function proxy for Anthropic -->
 <meta name="description" content="Find your dream home in Baltimore — chat with our AI assistant and book a showing instantly." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
@@ -350,8 +350,8 @@ var CONFIG = {
   email:       "sarah@sarahjohnsonrealty.com",
   scriptUrl:   "Replace YOUR_GOOGLE_SHEET_URL_HERE",
   calendlyUrl: "https://calendly.com/REPLACE_YOUR_LINK",
-  webhookUrl:  "https://REPLACE_YOUR_N8N_WEBHOOK",
-  apiKey:      "Replace YOUR_ANTHROPIC_API_KEY_HERE"
+  webhookUrl:  "https://REPLACE_YOUR_N8N_WEBHOOK"
+  // API key is now in Netlify environment variables — not needed here
 };
 
 // ── LISTINGS ──────────────────────────────────────────────────
@@ -652,31 +652,26 @@ function showOK(name) {
   if (b) b.style.display = "none";
 }
 
-// ── ANTHROPIC API CALL
+// ── ANTHROPIC API CALL (proxied via Netlify Function)
 function callClaude(userText) {
   if (apiLocked) return;
   apiLocked = true;
+
   chatHistory.push({ role: "user", content: userText });
   sTy();
   setInputDisabled(true);
 
-  fetch("https://api.anthropic.com/v1/messages", {
+  // Call our Netlify serverless function — never hits Anthropic directly from browser
+  fetch("/.netlify/functions/chat", {
     method: "POST",
-    headers: {
-      "Content-Type":      "application/json",
-      "x-api-key":         CONFIG.apiKey,
-      "anthropic-version": "2023-06-01",
-      "anthropic-dangerous-allow-cors-requests": "true"
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      model:      "claude-sonnet-4-20250514",
-      max_tokens: 1000,
-      system:     buildSystemPrompt(),
-      messages:   chatHistory
+      system:   buildSystemPrompt(),
+      messages: chatHistory
     })
   })
   .then(function(res) {
-    if (!res.ok) throw new Error("API " + res.status);
+    if (!res.ok) throw new Error("Function error: " + res.status);
     return res.json();
   })
   .then(function(data) {
@@ -684,7 +679,7 @@ function callClaude(userText) {
     apiLocked = false;
     setInputDisabled(false);
 
-    var raw = (data.content && data.content[0] && data.content[0].text) ? data.content[0].text : "";
+    var raw = data.text || "";
 
     var showForm    = raw.indexOf("SHOW_LEAD_FORM")     !== -1;
     var showAllList = raw.indexOf("SHOW_ALL_LISTINGS")  !== -1;
@@ -709,7 +704,7 @@ function callClaude(userText) {
     hTy();
     apiLocked = false;
     setInputDisabled(false);
-    console.error("Claude API error:", err);
+    console.error("Chat function error:", err);
     aMsg("bot", "Sorry, I ran into a connection issue. Please try again or call Sarah directly at " + CONFIG.phone + ".");
   });
 }
