@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Remix This Template · AI Real Estate Page</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Epilogue:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg:       #0d0f0e;
+    --surface:  #141816;
+    --border:   #222622;
+    --brand:    #3ddc84;
+    --brand-dim:#1f6e41;
+    --accent:   #c9f542;
+    --text:     #e8ede9;
+    --muted:    #6b7a6d;
+    --radius:   12px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { font-family: 'Epilogue', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
+  body::before { content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E"); opacity: .5; }
+  .shell { position: relative; z-index: 1; display: grid; grid-template-columns: 480px 1fr; min-height: 100vh; }
+
+  /* LEFT */
+  .left { background: var(--surface); border-right: 1px solid var(--border); padding: 48px 44px; display: flex; flex-direction: column; overflow-y: auto; }
+  .logo { display: flex; align-items: center; gap: 10px; margin-bottom: 48px; }
+  .logo-mark { width: 36px; height: 36px; background: var(--brand); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; }
+  .logo-text { font-family: 'Syne', sans-serif; font-size: .95rem; font-weight: 700; color: var(--text); letter-spacing: .02em; }
+  .logo-sub { font-size: .72rem; color: var(--muted); }
+  .step-pill { display: inline-flex; align-items: center; gap: 6px; background: rgba(61,220,132,.12); color: var(--brand); border: 1px solid rgba(61,220,132,.25); border-radius: 40px; padding: 5px 14px; font-size: .72rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 18px; }
+  .step-pill::before { content: '●'; font-size: .45rem; }
+  h1 { font-family: 'Syne', sans-serif; font-size: 1.9rem; font-weight: 800; color: var(--text); line-height: 1.15; margin-bottom: 10px; }
+  h1 span { color: var(--brand); }
+  .step-desc { color: var(--muted); font-size: .9rem; line-height: 1.6; margin-bottom: 28px; }
+
+  /* PROGRESS */
+  .progress-bar { display: flex; gap: 6px; margin-bottom: 36px; }
+  .pb-seg { height: 3px; flex: 1; border-radius: 4px; background: var(--border); transition: background .4s; }
+  .pb-seg.done { background: var(--brand); }
+  .pb-seg.active { background: var(--brand); opacity: .5; }
+
+  /* FORM */
+  .form-group { margin-bottom: 22px; }
+  label { display: flex; align-items: center; gap: 7px; font-size: .8rem; font-weight: 500; color: var(--muted); letter-spacing: .05em; text-transform: uppercase; margin-bottom: 8px; }
+  .lbl-opt { font-size: .7rem; color: var(--muted); font-weight: 400; text-transform: none; letter-spacing: 0; margin-left: 4px; }
+  input[type="text"], input[type="tel"], input[type="email"], input[type="url"] { width: 100%; background: var(--bg); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 13px 16px; font-family: 'Epilogue', sans-serif; font-size: .95rem; color: var(--text); outline: none; transition: border-color .2s, box-shadow .2s; }
+  input:focus { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(61,220,132,.12); }
+  input::placeholder { color: #3a4a3c; }
+
+  /* color picker */
+  .color-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .color-swatch { width: 36px; height: 36px; border-radius: 8px; border: 2px solid transparent; cursor: pointer; transition: transform .15s, border-color .15s; flex-shrink: 0; }
+  .color-swatch:hover { transform: scale(1.1); }
+  .color-swatch.selected { border-color: #fff; transform: scale(1.12); }
+  .color-custom { flex: 1; min-width: 100px; background: var(--bg); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 8px 14px; font-family: 'Epilogue', sans-serif; font-size: .85rem; color: var(--text); outline: none; }
+  .color-custom:focus { border-color: var(--brand); }
+
+  /* info box */
+  .info-box { background: rgba(61,220,132,.07); border: 1px solid rgba(61,220,132,.2); border-radius: var(--radius); padding: 16px 18px; font-size: .82rem; line-height: 1.65; color: var(--muted); margin-bottom: 22px; }
+  .info-box strong { color: var(--text); }
+  .info-box code { color: var(--brand); font-family: monospace; }
+
+  /* test connection */
+  .test-row { display: flex; gap: 10px; align-items: center; margin-top: 10px; }
+  .test-btn { background: rgba(61,220,132,.12); color: var(--brand); border: 1px solid rgba(61,220,132,.25); border-radius: 8px; padding: 9px 16px; font-size: .8rem; font-family: 'Epilogue', sans-serif; cursor: pointer; white-space: nowrap; transition: all .15s; }
+  .test-btn:hover { background: var(--brand); color: #000; }
+  .test-result { font-size: .8rem; color: var(--muted); }
+  .test-result.ok  { color: var(--brand); }
+  .test-result.err { color: #f87171; }
+
+  /* ref display */
+  .ref-display { background: var(--bg); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 13px 16px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .ref-code { font-family: monospace; font-size: .88rem; color: var(--brand); word-break: break-all; }
+  .ref-copy { background: rgba(61,220,132,.12); color: var(--brand); border: 1px solid rgba(61,220,132,.2); border-radius: 6px; padding: 4px 12px; font-size: .75rem; cursor: pointer; font-family: 'Epilogue', sans-serif; transition: all .15s; white-space: nowrap; flex-shrink: 0; }
+  .ref-copy:hover { background: var(--brand); color: #000; }
+
+  /* actions */
+  .actions { display: flex; gap: 12px; margin-top: 10px; }
+  .btn-next { flex: 1; background: var(--brand); color: #000; border: none; border-radius: var(--radius); padding: 15px 24px; font-family: 'Syne', sans-serif; font-size: .95rem; font-weight: 700; cursor: pointer; transition: all .2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .btn-next:hover { background: var(--accent); transform: translateY(-1px); }
+  .btn-back { background: transparent; color: var(--muted); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 15px 20px; cursor: pointer; font-family: 'Epilogue', sans-serif; font-size: .9rem; transition: all .15s; }
+  .btn-back:hover { color: var(--text); border-color: var(--muted); }
+  .btn-download { flex: 1; background: var(--accent); color: #000; border: none; border-radius: var(--radius); padding: 15px 24px; font-family: 'Syne', sans-serif; font-size: .95rem; font-weight: 700; cursor: pointer; transition: all .2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .btn-download:hover { background: #d4ff55; transform: translateY(-1px); }
+
+  /* step panels */
+  .step-panel { display: none; animation: stepIn .3s ease both; }
+  .step-panel.active { display: block; }
+  @keyframes stepIn { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: translateX(0); } }
+
+  /* success */
+  .success-icon-lg { font-size: 3.5rem; margin-bottom: 20px; display: block; }
+  .deploy-steps { background: rgba(61,220,132,.07); border: 1px solid rgba(61,220,132,.2); border-radius: var(--radius); padding: 16px 18px; font-size: .85rem; line-height: 1.8; color: var(--muted); margin: 20px 0; }
+  .deploy-steps strong { color: var(--text); }
+  .deploy-steps code { color: var(--brand); font-family: monospace; }
+  .success-link { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 18px; display: flex; align-items: center; gap: 12px; font-size: .875rem; color: var(--text); text-decoration: none; transition: border-color .15s; margin-bottom: 10px; cursor: pointer; }
+  .success-link:hover { border-color: var(--brand); }
+  .success-link .sl-icon { font-size: 1.2rem; }
+  .success-link small { color: var(--muted); font-size: .75rem; display: block; }
+
+  .panel-footer { margin-top: auto; padding-top: 40px; font-size: .75rem; color: var(--muted); line-height: 1.6; border-top: 1px solid var(--border); }
+  .panel-footer a { color: var(--brand); text-decoration: none; }
+
+  /* RIGHT PREVIEW */
+  .right { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; background: #0a0c0b; overflow: hidden; }
+  .preview-bar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 24px; display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
+  .browser-dots { display: flex; gap: 6px; }
+  .browser-dot { width: 12px; height: 12px; border-radius: 50%; }
+  .bd-r { background: #ff5f57; } .bd-y { background: #febc2e; } .bd-g { background: #28c840; }
+  .preview-url { flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 6px 14px; font-size: .8rem; color: var(--muted); font-family: monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .preview-live { font-size: .72rem; color: var(--brand); display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+  .preview-live::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--brand); display: inline-block; animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
+  #preview-frame { flex: 1; border: none; width: 100%; }
+  .preview-overlay { position: absolute; inset: 54px 0 0 0; display: flex; align-items: center; justify-content: center; background: rgba(13,15,14,.85); backdrop-filter: blur(4px); font-family: 'Syne', sans-serif; font-size: 1rem; color: var(--muted); pointer-events: none; transition: opacity .4s; }
+  .preview-overlay.hidden { opacity: 0; }
+
+  @media (max-width: 860px) { .shell { grid-template-columns: 1fr; } .right { display: none; } .left { padding: 36px 24px; } }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- LEFT PANEL -->
+  <div class="left">
+    <div class="logo">
+      <div class="logo-mark">🏡</div>
+      <div>
+        <div class="logo-text">RemixPage</div>
+        <div class="logo-sub">Real Estate AI Template · v2</div>
+      </div>
+    </div>
+
+    <div class="progress-bar" id="progress-bar">
+      <div class="pb-seg active" id="seg-0"></div>
+      <div class="pb-seg" id="seg-1"></div>
+      <div class="pb-seg" id="seg-2"></div>
+      <div class="pb-seg" id="seg-3"></div>
+      <div class="pb-seg" id="seg-4"></div>
+    </div>
+
+    <!-- STEP 0: AGENT INFO -->
+    <div class="step-panel active" id="step-0">
+      <div class="step-pill">Step 1 of 4</div>
+      <h1>Make it <span>yours</span></h1>
+      <p class="step-desc">Fill in your details — the live preview updates as you type.</p>
+
+      <div class="form-group">
+        <label>👤 Agent / Business Name</label>
+        <input type="text" id="f-name" placeholder="e.g. Sarah Johnson Realty" oninput="updatePreview()" />
+      </div>
+      <div class="form-group">
+        <label>📍 City / Market</label>
+        <input type="text" id="f-city" placeholder="e.g. Baltimore, MD" oninput="updatePreview()" />
+      </div>
+      <div class="form-group">
+        <label>📞 Phone Number</label>
+        <input type="tel" id="f-phone" placeholder="e.g. (410) 555-0192" oninput="updatePreview()" />
+      </div>
+      <div class="form-group">
+        <label>📧 Email Address</label>
+        <input type="email" id="f-email" placeholder="e.g. sarah@myrealty.com" oninput="updatePreview()" />
+      </div>
+
+      <div class="actions">
+        <button class="btn-next" onclick="goStep(1)">Continue → Brand Color</button>
+      </div>
+    </div>
+
+    <!-- STEP 1: BRANDING -->
+    <div class="step-panel" id="step-1">
+      <div class="step-pill">Step 2 of 4</div>
+      <h1>Pick your <span>brand color</span></h1>
+      <p class="step-desc">Sets the tone for buttons, headers, and the chat widget.</p>
+
+      <div class="form-group">
+        <label>🎨 Primary Color</label>
+        <div class="color-row">
+          <div class="color-swatch selected" style="background:#1a3a2a" data-color="#1a3a2a" onclick="selectColor(this)" title="Forest"></div>
+          <div class="color-swatch" style="background:#1a2a4a" data-color="#1a2a4a" onclick="selectColor(this)" title="Navy"></div>
+          <div class="color-swatch" style="background:#3a1a1a" data-color="#3a1a1a" onclick="selectColor(this)" title="Burgundy"></div>
+          <div class="color-swatch" style="background:#1a3a4a" data-color="#1a3a4a" onclick="selectColor(this)" title="Teal"></div>
+          <div class="color-swatch" style="background:#2a1a4a" data-color="#2a1a4a" onclick="selectColor(this)" title="Plum"></div>
+          <div class="color-swatch" style="background:#3a3010" data-color="#3a3010" onclick="selectColor(this)" title="Olive"></div>
+          <input type="color" class="color-custom" id="f-color-picker" value="#1a3a2a" oninput="customColor(this)" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>🔗 Booking Link <span class="lbl-opt">(Calendly or other)</span></label>
+        <input type="url" id="f-calendly" placeholder="https://calendly.com/yourlink" oninput="updatePreview()" />
+      </div>
+      <div class="form-group">
+        <label>⚡ n8n Webhook URL <span class="lbl-opt">(optional)</span></label>
+        <input type="url" id="f-webhook" placeholder="https://your-n8n.app/webhook/..." />
+      </div>
+
+      <div class="actions">
+        <button class="btn-back" onclick="goStep(0)">← Back</button>
+        <button class="btn-next" onclick="goStep(2)">Continue → Listings</button>
+      </div>
+    </div>
+
+    <!-- STEP 2: GOOGLE SHEET CONNECTION -->
+    <div class="step-panel" id="step-2">
+      <div class="step-pill">Step 3 of 4</div>
+      <h1>Connect your <span>listings</span></h1>
+      <p class="step-desc">Your site fetches live listings from your Google Sheet via Apps Script. Here's how to set it up:</p>
+
+      <div class="info-box">
+        <strong>One-time setup (5 minutes):</strong><br>
+        1. Copy <code>appscript-v1.gs</code> into a new Apps Script project<br>
+        2. Paste your Google Sheet ID into <code>SHEET_ID</code><br>
+        3. Run <code>setupSheet()</code> once to create the Listings tab<br>
+        4. Click <strong>Deploy → New deployment → Web app</strong><br>
+        5. Set "Who has access" to <strong>Anyone</strong><br>
+        6. Copy the deployment URL and paste it below
+      </div>
+
+      <div class="form-group">
+        <label>🔗 Apps Script Deployment URL</label>
+        <input type="url" id="f-script-url" placeholder="https://script.google.com/macros/s/.../exec" oninput="updatePreview()" />
+        <div class="test-row">
+          <button class="test-btn" onclick="testConnection()">⚡ Test Connection</button>
+          <span class="test-result" id="test-result"></span>
+        </div>
+      </div>
+
+      <div class="info-box" style="margin-top:0;">
+        <strong>No sheet yet?</strong> Leave this blank — your template will show 3 sample listings as a fallback until you connect a sheet.
+      </div>
+
+      <div class="actions">
+        <button class="btn-back" onclick="goStep(1)">← Back</button>
+        <button class="btn-next" onclick="goStep(3)">Continue → Remix Link</button>
+      </div>
+    </div>
+
+    <!-- STEP 3: REFERRAL LINK -->
+    <div class="step-panel" id="step-3">
+      <div class="step-pill">Step 4 of 4</div>
+      <h1>Your <span>remix link</span></h1>
+      <p class="step-desc">Share this link. Every lead that comes through is attributed back to you.</p>
+
+      <div class="form-group">
+        <label>🆔 Your Creator ID</label>
+        <div class="ref-display">
+          <span class="ref-code" id="ref-code">—</span>
+          <button class="ref-copy" onclick="copyText('ref-code', this)">Copy</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>🔗 Shareable Remix URL</label>
+        <div class="ref-display">
+          <span class="ref-code" id="remix-url" style="font-size:.75rem;">—</span>
+          <button class="ref-copy" onclick="copyText('remix-url', this)">Copy</button>
+        </div>
+      </div>
+
+      <div class="info-box">
+        <strong>How attribution works:</strong><br>
+        When someone clicks your remix link their project is tagged with your creator ID. Close a deal from a remixed site? It traces back to this template.
+      </div>
+
+      <div class="actions">
+        <button class="btn-back" onclick="goStep(2)">← Back</button>
+        <button class="btn-download" onclick="downloadTemplate()">⬇ Download My Template</button>
+      </div>
+    </div>
+
+    <!-- STEP 4: SUCCESS -->
+    <div class="step-panel" id="step-4">
+      <span class="success-icon-lg">🎉</span>
+      <h1>Your page is <span>ready</span></h1>
+      <p class="step-desc">Your customized real estate AI template has downloaded.</p>
+
+      <div class="deploy-steps">
+        <strong>Deploy in 3 steps:</strong><br>
+        1. Push <code>real-estate-template-v2.html</code> → rename to <code>index.html</code> in GitHub<br>
+        2. Connect repo to Netlify (free)<br>
+        3. Live at <code>yourname.netlify.app</code> in ~60 seconds
+      </div>
+
+      <div class="success-link" onclick="downloadTemplate()">
+        <span class="sl-icon">⬇</span>
+        <div><div>Download again</div><small>Your customized template file</small></div>
+      </div>
+      <a href="https://app.netlify.com" target="_blank" class="success-link">
+        <span class="sl-icon">🚀</span>
+        <div><div>Deploy to Netlify</div><small>Free hosting, drag &amp; drop or GitHub sync</small></div>
+      </a>
+      <a href="https://github.com" target="_blank" class="success-link">
+        <span class="sl-icon">🐙</span>
+        <div><div>Push to GitHub</div><small>Version control + auto-deploy trigger</small></div>
+      </a>
+
+      <div class="actions" style="margin-top:24px;">
+        <button class="btn-next" onclick="goStep(0); resetForm()">← Start Over (new client)</button>
+      </div>
+    </div>
+
+    <div class="panel-footer">
+      Template by <a href="#">Your Brand</a> · Remix &amp; launch for free ·
+      <a href="#">Get the full AI automation system →</a>
+    </div>
+  </div>
+
+  <!-- RIGHT PREVIEW -->
+  <div class="right">
+    <div class="preview-bar">
+      <div class="browser-dots">
+        <div class="browser-dot bd-r"></div>
+        <div class="browser-dot bd-y"></div>
+        <div class="browser-dot bd-g"></div>
+      </div>
+      <div class="preview-url" id="preview-url-bar">your-site.netlify.app</div>
+      <div class="preview-live">Live Preview</div>
+    </div>
+    <div style="position:relative;flex:1;display:flex;flex-direction:column;">
+      <iframe id="preview-frame" title="Live preview"></iframe>
+      <div class="preview-overlay" id="preview-overlay">← Fill in your details to see a live preview</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── STATE ──────────────────────────────────────────────────────
+var state = {
+  name:      "",
+  city:      "",
+  phone:     "",
+  email:     "",
+  color:     "#1a3a2a",
+  calendly:  "",
+  webhook:   "",
+  scriptUrl: "",
+  refId:     genRefId()
+};
+
+var previewTimer = null;
+
+// ── NAVIGATION ─────────────────────────────────────────────────
+function goStep(n) {
+  document.querySelectorAll(".step-panel").forEach(function(p, i) {
+    p.classList.toggle("active", i === n);
+  });
+  document.querySelectorAll(".pb-seg").forEach(function(s, i) {
+    s.classList.remove("done", "active");
+    if (i < n)        s.classList.add("done");
+    else if (i === n) s.classList.add("active");
+  });
+  if (n === 3) setupRefStep();
+}
+
+// ── FORM SYNC ──────────────────────────────────────────────────
+function syncState() {
+  state.name      = val("f-name")       || "Your Name";
+  state.city      = val("f-city")       || "Your City";
+  state.phone     = val("f-phone")      || "(555) 000-0000";
+  state.email     = val("f-email")      || "you@example.com";
+  state.calendly  = val("f-calendly")   || "#";
+  state.webhook   = val("f-webhook")    || "";
+  state.scriptUrl = val("f-script-url") || "";
+}
+
+function val(id) {
+  var el = document.getElementById(id);
+  return el ? el.value.trim() : "";
+}
+
+function updatePreview() {
+  syncState();
+  clearTimeout(previewTimer);
+  previewTimer = setTimeout(renderPreview, 200);
+  updateUrlBar();
+}
+
+function updateUrlBar() {
+  var slug = state.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/, "") || "your-site";
+  document.getElementById("preview-url-bar").textContent = slug + ".netlify.app";
+}
+
+// ── COLOR ──────────────────────────────────────────────────────
+function selectColor(el) {
+  document.querySelectorAll(".color-swatch").forEach(function(s) { s.classList.remove("selected"); });
+  el.classList.add("selected");
+  state.color = el.dataset.color;
+  document.getElementById("f-color-picker").value = state.color;
+  updatePreview();
+}
+function customColor(input) {
+  document.querySelectorAll(".color-swatch").forEach(function(s) { s.classList.remove("selected"); });
+  state.color = input.value;
+  updatePreview();
+}
+
+// ── TEST CONNECTION ────────────────────────────────────────────
+function testConnection() {
+  var url = val("f-script-url");
+  var result = document.getElementById("test-result");
+  if (!url) { result.textContent = "Paste your Apps Script URL first."; result.className = "test-result err"; return; }
+  result.textContent = "Testing…"; result.className = "test-result";
+  fetch(url + "?action=testConnection")
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.success) {
+        result.textContent = "✓ Connected — " + d.listingCount + " listing(s) found";
+        result.className = "test-result ok";
+      } else {
+        result.textContent = "✗ " + (d.error || "Connection failed");
+        result.className = "test-result err";
+      }
+    })
+    .catch(function(e) {
+      result.textContent = "✗ Could not reach URL. Check deployment settings.";
+      result.className = "test-result err";
+    });
+}
+
+// ── REFERRAL ───────────────────────────────────────────────────
+function genRefId() {
+  return "ref-" + Math.random().toString(36).substring(2, 9).toUpperCase();
+}
+function setupRefStep() {
+  syncState();
+  document.getElementById("ref-code").textContent = state.refId;
+  var slug = state.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/, "") || "template";
+  document.getElementById("remix-url").textContent =
+    "yourapp.netlify.app/remix/" + slug + "?ref=" + state.refId;
+}
+function copyText(id, btn) {
+  var text = document.getElementById(id).textContent;
+  navigator.clipboard.writeText(text).then(function() {
+    var orig = btn.textContent;
+    btn.textContent = "Copied!";
+    setTimeout(function() { btn.textContent = orig; }, 1800);
+  });
+}
+
+// ── DOWNLOAD ───────────────────────────────────────────────────
+function downloadTemplate() {
+  syncState();
+  var html  = buildTemplate();
+  var blob  = new Blob([html], { type: "text/html" });
+  var a     = document.createElement("a");
+  a.href    = URL.createObjectURL(blob);
+  var slug  = state.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/, "") || "real-estate";
+  a.download = slug + "-ai-page-v2.html";
+  a.click();
+  URL.revokeObjectURL(a.href);
+  goStep(4);
+}
+
+function resetForm() {
+  ["f-name","f-city","f-phone","f-email","f-calendly","f-webhook","f-script-url"].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.value = "";
+  });
+  state.refId = genRefId();
+  document.getElementById("preview-overlay").classList.remove("hidden");
+}
+
+// ── PREVIEW RENDER ─────────────────────────────────────────────
+function renderPreview() {
+  var html   = buildTemplate();
+  var blob   = new Blob([html], { type: "text/html" });
+  var url    = URL.createObjectURL(blob);
+  var frame  = document.getElementById("preview-frame");
+  frame.onload = function() { URL.revokeObjectURL(url); };
+  frame.src  = url;
+  if (state.name !== "Your Name") {
+    document.getElementById("preview-overlay").classList.add("hidden");
+  }
+}
+
+// ── LIGHTEN COLOR ──────────────────────────────────────────────
+function lighten(hex, amt) {
+  var n = parseInt(hex.replace("#",""), 16);
+  var r = Math.min(255, (n >> 16) + amt);
+  var g = Math.min(255, ((n >> 8) & 0xff) + amt);
+  var b = Math.min(255, (n & 0xff) + amt);
+  return "#" + ((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1);
+}
+
+function esc(s) {
+  return String(s)
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+}
+
+// ── TEMPLATE BUILDER ───────────────────────────────────────────
+// Produces a complete, self-contained real-estate-template-v2.html
+// with all CONFIG values baked in and the Apps Script URL wired up.
+function buildTemplate() {
+  var brand    = state.color;
+  var brandMid = lighten(brand, 20);
+  var brandLgt = lighten(brand, 40);
+  var name     = esc(state.name  || "Agent Name");
+  var city     = esc(state.city  || "Your City");
+  var phone    = esc(state.phone || "(555) 000-0000");
+  var email    = esc(state.email || "you@example.com");
+  var script   = esc(state.scriptUrl || "Replace YOUR_GOOGLE_SHEET_URL_HERE");
+  var calendly = esc(state.calendly  || "#");
+  var webhook  = esc(state.webhook   || "");
+
+  // Read the full v2 template and inject CONFIG values
+  // Since we're in the browser, we embed the template inline here.
+  // The real-estate-template-v2.html is the authoritative source;
+  // this builder produces a client-ready copy with values substituted.
+
+  return '<!DOCTYPE html>\n' +
+'<html lang="en">\n' +
+'<head>\n' +
+'<meta charset="UTF-8"/>\n' +
+'<meta name="viewport" content="width=device-width,initial-scale=1.0"/>\n' +
+'<title>' + name + ' | ' + city + ' Real Estate</title>\n' +
+'<meta name="description" content="Find your dream home in ' + city + ' — chat with our AI assistant and book a showing instantly."/>\n' +
+'<link rel="preconnect" href="https://fonts.googleapis.com"/>\n' +
+'<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>\n' +
+'<!-- CONFIG injected by RemixPage v2 -->\n' +
+'<script>\n' +
+'var CONFIG = {\n' +
+'  agentName:  "' + name + '",\n' +
+'  city:       "' + city + '",\n' +
+'  phone:      "' + phone + '",\n' +
+'  email:      "' + email + '",\n' +
+'  scriptUrl:  "' + script + '",\n' +
+'  calendlyUrl:"' + calendly + '",\n' +
+'  webhookUrl: "' + webhook + '"\n' +
+'};\n' +
+'<\/script>\n' +
+'<!-- Brand color injected by RemixPage v2 -->\n' +
+'<style>\n' +
+':root {\n' +
+'  --brand:       ' + brand + ';\n' +
+'  --brand-mid:   ' + brandMid + ';\n' +
+'  --brand-light: ' + brandLgt + ';\n' +
+'  --accent:      #c9a84c;\n' +
+'  --accent-light:#f0d78a;\n' +
+'  --bg:          #f7f4ef;\n' +
+'  --surface:     #ffffff;\n' +
+'  --text:        #1a1a1a;\n' +
+'  --text-muted:  #6b6b6b;\n' +
+'  --radius:      14px;\n' +
+'  --shadow:      0 4px 30px rgba(0,0,0,.10);\n' +
+'  --shadow-lg:   0 12px 60px rgba(0,0,0,.16);\n' +
+'}\n' +
+'</style>\n' +
+'<!-- Load full template styles + body from real-estate-template-v2.html -->\n' +
+'<!-- NOTE: In production, merge this CONFIG block into real-estate-template-v2.html -->\n' +
+'<!-- and deploy the single merged file as index.html -->\n' +
+'<style>\n' +
+getTemplateStyles() +
+'</style>\n' +
+'</head>\n' +
+'<body>\n' +
+getTemplateBody(name, city, phone, email) +
+getTemplateScript() +
+'</body>\n' +
+'</html>';
+}
+
+// Styles extracted from the template (abbreviated inline here for the builder)
+function getTemplateStyles() {
+  return '*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}html{scroll-behavior:smooth;}body{font-family:\'DM Sans\',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;}nav{position:fixed;top:0;left:0;right:0;z-index:900;display:flex;align-items:center;justify-content:space-between;padding:18px 48px;background:rgba(247,244,239,.92);backdrop-filter:blur(12px);border-bottom:1px solid rgba(0,0,0,.06);}.nav-logo{font-family:\'Playfair Display\',serif;font-size:1.25rem;color:var(--brand);text-decoration:none;}.nav-cta{background:var(--brand);color:#fff;border:none;border-radius:8px;padding:10px 22px;font-size:.875rem;font-family:\'DM Sans\',sans-serif;font-weight:500;cursor:pointer;}.hero{min-height:100vh;display:grid;grid-template-columns:1fr 420px;align-items:center;padding:120px 48px 80px;position:relative;overflow:hidden;}.hero::before{content:\'\';position:absolute;inset:0;background:radial-gradient(ellipse 700px 600px at 60% 40%,rgba(46,107,79,.08),transparent);pointer-events:none;}.hero-left{position:relative;z-index:1;max-width:560px;}.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;background:rgba(201,168,76,.12);color:var(--accent);border:1px solid rgba(201,168,76,.3);border-radius:40px;padding:6px 16px;font-size:.8rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;margin-bottom:28px;}h1{font-family:\'Playfair Display\',serif;font-size:clamp(2.4rem,4.5vw,3.8rem);line-height:1.12;color:var(--brand);margin-bottom:24px;}h1 em{font-style:italic;color:var(--brand-light);}.hero-sub{font-size:1.1rem;color:var(--text-muted);line-height:1.65;max-width:440px;margin-bottom:40px;}.hero-actions{display:flex;gap:14px;flex-wrap:wrap;}.btn-primary{background:var(--brand);color:#fff;border:none;border-radius:10px;padding:16px 32px;font-size:1rem;font-weight:500;cursor:pointer;transition:all .2s;font-family:\'DM Sans\',sans-serif;display:flex;align-items:center;gap:8px;}.btn-secondary{background:transparent;color:var(--brand);border:1.5px solid var(--brand);border-radius:10px;padding:16px 28px;font-size:1rem;cursor:pointer;font-family:\'DM Sans\',sans-serif;}.hero-stats{display:flex;gap:40px;margin-top:56px;border-top:1px solid rgba(0,0,0,.08);padding-top:36px;flex-wrap:wrap;}.stat-val{font-family:\'Playfair Display\',serif;font-size:2rem;color:var(--brand);display:block;}.stat-label{font-size:.8rem;color:var(--text-muted);}.section{padding:100px 48px;}.section-label{font-size:.78rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--brand-light);margin-bottom:14px;}.section-title{font-family:\'Playfair Display\',serif;font-size:clamp(1.8rem,3vw,2.8rem);color:var(--brand);line-height:1.2;margin-bottom:16px;}.section-sub{color:var(--text-muted);font-size:1rem;line-height:1.6;max-width:520px;}.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:32px;margin-top:56px;}.step{background:var(--surface);border-radius:var(--radius);padding:36px 32px;border:1px solid rgba(0,0,0,.05);position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s;}.step:hover{transform:translateY(-4px);}.step-num{font-family:\'Playfair Display\',serif;font-size:5rem;font-weight:700;color:rgba(46,107,79,.07);position:absolute;top:-10px;right:16px;line-height:1;pointer-events:none;}.step-icon{width:52px;height:52px;background:rgba(46,107,79,.1);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;margin-bottom:20px;}.step h3{font-family:\'Playfair Display\',serif;font-size:1.2rem;color:var(--brand);margin-bottom:10px;}.step p{font-size:.9rem;color:var(--text-muted);line-height:1.6;}.listings-section{background:var(--surface);}.listings-toolbar{display:flex;align-items:center;justify-content:space-between;margin-top:40px;flex-wrap:wrap;gap:14px;}.sort-controls{display:flex;gap:8px;flex-wrap:wrap;}.sort-btn{background:transparent;border:1.5px solid rgba(0,0,0,.1);border-radius:8px;padding:7px 14px;font-size:.8rem;font-family:\'DM Sans\',sans-serif;color:var(--text-muted);cursor:pointer;transition:all .15s;}.sort-btn:hover,.sort-btn.active{background:var(--brand);color:#fff;border-color:var(--brand);}.listings-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;margin-top:20px;}.skeleton-card{border-radius:var(--radius);overflow:hidden;border:1px solid rgba(0,0,0,.06);}.skeleton-img{height:200px;background:linear-gradient(90deg,#e8e8e8 25%,#f0f0f0 50%,#e8e8e8 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;}.skeleton-body{padding:22px;display:flex;flex-direction:column;gap:10px;}.skeleton-line{height:14px;background:linear-gradient(90deg,#e8e8e8 25%,#f0f0f0 50%,#e8e8e8 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:6px;}.skeleton-line.wide{width:75%;}.skeleton-line.narrow{width:45%;}@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}.listing-card{border-radius:var(--radius);overflow:hidden;border:1px solid rgba(0,0,0,.06);cursor:pointer;transition:transform .2s,box-shadow .2s;}.listing-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg);}.listing-img{width:100%;height:200px;display:flex;align-items:center;justify-content:center;font-size:3rem;position:relative;}.listing-tag{position:absolute;top:14px;left:14px;background:var(--brand);color:#fff;font-size:.72rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;border-radius:6px;padding:4px 10px;}.listing-body{padding:22px;background:var(--surface);}.listing-price{font-family:\'Playfair Display\',serif;font-size:1.5rem;color:var(--brand);margin-bottom:4px;}.listing-addr{font-size:.875rem;color:var(--text-muted);margin-bottom:14px;}.listing-details{display:flex;gap:16px;flex-wrap:wrap;}.listing-detail{font-size:.8rem;color:var(--text-muted);}.listing-cta{display:block;width:100%;margin-top:18px;background:transparent;border:1.5px solid var(--brand);color:var(--brand);border-radius:8px;padding:10px;font-family:\'DM Sans\',sans-serif;font-size:.875rem;font-weight:500;cursor:pointer;transition:all .2s;}.listing-cta:hover{background:var(--brand);color:#fff;}.listings-message{grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--text-muted);}.lm-icon{font-size:2.5rem;margin-bottom:14px;display:block;}.retry-btn{margin-top:16px;background:var(--brand);color:#fff;border:none;border-radius:8px;padding:10px 22px;font-family:\'DM Sans\',sans-serif;font-size:.875rem;cursor:pointer;}.testimonials-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;margin-top:56px;}.testi{background:var(--surface);border-radius:var(--radius);padding:32px;border:1px solid rgba(0,0,0,.05);}.testi-stars{color:var(--accent);font-size:1rem;letter-spacing:2px;margin-bottom:16px;}.testi-text{font-size:.95rem;color:var(--text-muted);line-height:1.65;margin-bottom:20px;font-style:italic;}.testi-author{font-weight:500;color:var(--brand);font-size:.875rem;}.testi-role{font-size:.8rem;color:var(--text-muted);}.booking-section{background:var(--brand);padding:100px 48px;text-align:center;position:relative;overflow:hidden;}.booking-section h2{font-family:\'Playfair Display\',serif;font-size:clamp(2rem,3.5vw,3rem);color:#fff;margin-bottom:16px;}.booking-section p{color:rgba(255,255,255,.7);font-size:1.05rem;margin-bottom:40px;}.btn-accent{background:var(--accent);color:var(--brand);border:none;border-radius:10px;padding:18px 40px;font-size:1.05rem;font-weight:600;cursor:pointer;font-family:\'DM Sans\',sans-serif;}footer{background:var(--brand);color:rgba(255,255,255,.5);padding:28px 48px;display:flex;align-items:center;justify-content:space-between;font-size:.82rem;border-top:1px solid rgba(255,255,255,.08);flex-wrap:wrap;gap:12px;}footer a{color:#f0d78a;text-decoration:none;}#chat-toggle{position:fixed;bottom:28px;right:28px;z-index:1000;width:60px;height:60px;border-radius:50%;background:var(--brand);color:#fff;border:none;box-shadow:0 6px 30px rgba(26,58,42,.4);cursor:pointer;font-size:1.5rem;display:flex;align-items:center;justify-content:center;transition:all .2s;}.chat-badge{position:absolute;top:-4px;right:-4px;width:20px;height:20px;background:var(--accent);border-radius:50%;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;color:var(--brand);}#chat-window{position:fixed;bottom:102px;right:28px;z-index:999;width:380px;height:560px;background:var(--surface);border-radius:20px;box-shadow:var(--shadow-lg);display:flex;flex-direction:column;overflow:hidden;border:1px solid rgba(0,0,0,.08);transform:translateY(20px) scale(.96);opacity:0;pointer-events:none;transition:all .25s cubic-bezier(.22,1,.36,1);}#chat-window.open{transform:translateY(0) scale(1);opacity:1;pointer-events:all;}.cw-header{background:var(--brand);padding:18px 20px;display:flex;align-items:center;gap:12px;flex-shrink:0;}.cw-avatar{width:44px;height:44px;border-radius:50%;background:var(--accent);color:var(--brand);display:flex;align-items:center;justify-content:center;font-size:1.2rem;font-weight:700;flex-shrink:0;font-family:\'Playfair Display\',serif;}.cw-info{flex:1;}.cw-name{color:#fff;font-weight:500;font-size:.95rem;}.cw-status{color:rgba(255,255,255,.6);font-size:.76rem;}.cw-close{background:none;border:none;color:rgba(255,255,255,.7);cursor:pointer;font-size:1.2rem;padding:4px;}#chat-messages{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:12px;scroll-behavior:smooth;}#chat-messages::-webkit-scrollbar{width:4px;}#chat-messages::-webkit-scrollbar-thumb{background:#ddd;border-radius:4px;}.cm{display:flex;flex-direction:column;}.cm.bot{align-items:flex-start;}.cm.user{align-items:flex-end;}.cm-bubble{max-width:85%;padding:12px 16px;border-radius:18px;font-size:.9rem;line-height:1.5;}.cm.bot .cm-bubble{background:#f1f5f2;color:var(--text);border-bottom-left-radius:4px;}.cm.user .cm-bubble{background:var(--brand);color:#fff;border-bottom-right-radius:4px;}.cm-time{font-size:.7rem;color:var(--text-muted);margin-top:4px;padding:0 4px;}.qr-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;}.qr-chip{background:#fff;border:1.5px solid var(--brand-light);color:var(--brand);border-radius:24px;padding:7px 14px;font-size:.82rem;cursor:pointer;font-family:\'DM Sans\',sans-serif;transition:all .15s;}.qr-chip:hover{background:var(--brand);color:#fff;border-color:var(--brand);}.typing-indicator{display:flex;gap:5px;align-items:center;padding:12px 16px;}.typing-dot{width:8px;height:8px;border-radius:50%;background:var(--brand-light);animation:bounce .9s infinite;}.typing-dot:nth-child(2){animation-delay:.15s;}.typing-dot:nth-child(3){animation-delay:.3s;}.cw-input-row{border-top:1px solid #eee;padding:14px 16px;display:flex;gap:10px;align-items:center;flex-shrink:0;}#chat-input{flex:1;border:1.5px solid #e5e5e5;border-radius:24px;padding:10px 18px;font-size:.875rem;font-family:\'DM Sans\',sans-serif;outline:none;}#chat-send{width:42px;height:42px;border-radius:50%;background:var(--brand);border:none;cursor:pointer;color:#fff;font-size:1rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;}.lead-form{display:flex;flex-direction:column;gap:10px;margin-top:4px;}.lead-input{border:1.5px solid #e0e0e0;border-radius:10px;padding:10px 14px;font-size:.875rem;font-family:\'DM Sans\',sans-serif;outline:none;width:100%;}.lead-submit{background:var(--brand);color:#fff;border:none;border-radius:10px;padding:11px;font-family:\'DM Sans\',sans-serif;font-size:.9rem;font-weight:500;cursor:pointer;}.success-msg{text-align:center;padding:20px;background:rgba(74,153,112,.1);border-radius:14px;border:1px solid rgba(74,153,112,.3);}.success-icon{font-size:2.5rem;margin-bottom:12px;}.success-title{color:var(--brand);font-weight:600;font-size:1rem;margin-bottom:6px;}.success-sub{color:var(--text-muted);font-size:.85rem;line-height:1.5;}.powered-by{text-align:center;padding:10px;font-size:.72rem;color:var(--text-muted);border-top:1px solid #f0f0f0;flex-shrink:0;}.powered-by a{color:var(--brand-light);text-decoration:none;}.chat-listing-card{background:#f8f8f8;border:1px solid #e5e5e5;border-radius:12px;padding:14px;margin-top:4px;max-width:85%;}.clc-emoji{font-size:1.6rem;margin-bottom:6px;display:block;}.clc-price{font-family:\'Playfair Display\',serif;font-size:1.1rem;color:var(--brand);}.clc-addr{font-size:.8rem;color:var(--text-muted);margin:2px 0 8px;}.clc-details{display:flex;gap:12px;font-size:.78rem;color:var(--text-muted);flex-wrap:wrap;}.clc-book{display:block;width:100%;margin-top:10px;background:var(--brand);color:#fff;border:none;border-radius:8px;padding:9px;font-family:\'DM Sans\',sans-serif;font-size:.82rem;cursor:pointer;}@keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}@media(max-width:900px){nav{padding:16px 24px;}.hero{grid-template-columns:1fr;padding:100px 24px 60px;}.section{padding:70px 24px;}.steps,.listings-grid,.testimonials-grid{grid-template-columns:1fr;}.booking-section{padding:70px 24px;}footer{flex-direction:column;text-align:center;}#chat-window{width:calc(100vw - 40px);right:20px;}}';
+}
+
+function getTemplateBody(name, city, phone, email) {
+  return '<nav><a href="#" class="nav-logo">' + name + ' Realty</a><button class="nav-cta" onclick="openChat()">💬 Chat Now</button></nav>' +
+'<section class="hero"><div class="hero-left"><div class="hero-eyebrow">AI-Powered Home Search</div><h1>Find Your <em>Dream Home</em><br>in ' + city + '</h1><p class="hero-sub">Chat with our AI assistant to explore listings, get answers instantly, and book a private showing — all in under 60 seconds.</p><div class="hero-actions"><button class="btn-primary" onclick="openChat()">💬 Start Chatting</button><button class="btn-secondary" onclick="document.getElementById(\'listings\').scrollIntoView({behavior:\'smooth\'})">View Listings</button></div><div class="hero-stats"><div><span class="stat-val" id="stat-count">—</span><span class="stat-label">Active Listings</span></div><div><span class="stat-val">98%</span><span class="stat-label">Client Satisfaction</span></div><div><span class="stat-val">60s</span><span class="stat-label">To Book a Showing</span></div></div></div></section>' +
+'<section class="section"><div class="section-label">Simple Process</div><div class="section-title">Three Steps to Your New Home</div><p class="section-sub">No endless browsing, no waiting. Just chat and we handle the rest.</p><div class="steps"><div class="step"><div class="step-num">1</div><div class="step-icon">💬</div><h3>Chat with AI</h3><p>Tell our assistant your budget, neighborhood, and must-haves.</p></div><div class="step"><div class="step-num">2</div><div class="step-icon">🏠</div><h3>Get Matched</h3><p>Receive curated listings that fit your criteria — not hundreds of irrelevant results.</p></div><div class="step"><div class="step-num">3</div><div class="step-icon">📅</div><h3>Book a Showing</h3><p>Schedule a private showing instantly from the chat window.</p></div></div></section>' +
+'<section class="section listings-section" id="listings"><div class="section-label">Featured Properties</div><div class="section-title">Homes in ' + city + '</div><p class="section-sub">Live listings updated by the agent. Click any card to ask our AI about it.</p><div class="listings-toolbar"><div class="sort-controls"><button class="sort-btn active" data-col="price" data-dir="asc" onclick="sortListings(this)">Price ↑</button><button class="sort-btn" data-col="price" data-dir="desc" onclick="sortListings(this)">Price ↓</button><button class="sort-btn" data-col="beds" data-dir="desc" onclick="sortListings(this)">Beds ↓</button><button class="sort-btn" data-col="sqft" data-dir="desc" onclick="sortListings(this)">Sqft ↓</button><button class="sort-btn" data-col="address" data-dir="asc" onclick="sortListings(this)">A–Z</button></div><span id="listing-count-label" style="font-size:.82rem;color:var(--text-muted);"></span></div><div class="listings-grid" id="listings-grid"><div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-body"><div class="skeleton-line wide"></div><div class="skeleton-line narrow"></div><div class="skeleton-line"></div></div></div><div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-body"><div class="skeleton-line wide"></div><div class="skeleton-line narrow"></div><div class="skeleton-line"></div></div></div><div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-body"><div class="skeleton-line wide"></div><div class="skeleton-line narrow"></div><div class="skeleton-line"></div></div></div></div></section>' +
+'<section class="section"><div class="section-label">Client Stories</div><div class="section-title">What Our Buyers Say</div><div class="testimonials-grid"><div class="testi"><div class="testi-stars">★★★★★</div><p class="testi-text">"I booked a showing in the chat window and was in the home the next day."</p><div class="testi-author">Marcus &amp; Tanya R.</div><div class="testi-role">First-time buyers, ' + city + '</div></div><div class="testi"><div class="testi-stars">★★★★★</div><p class="testi-text">"The AI matched us to a home we never would have found on Zillow. Closed in 30 days."</p><div class="testi-author">Denise &amp; Kevin M.</div><div class="testi-role">Relocating from out of state</div></div><div class="testi"><div class="testi-stars">★★★★★</div><p class="testi-text">"' + name + ' and the AI team answered every question I had at 11pm. Unmatched."</p><div class="testi-author">Jordan P.</div><div class="testi-role">Investor, ' + city + ' market</div></div></div></section>' +
+'<section class="booking-section"><h2>Ready to Find Your Home in ' + city + '?</h2><p>Chat with our AI now — no forms, no waiting, no pressure.</p><button class="btn-accent" onclick="openChat()">💬 Start Your Conversation</button></section>' +
+'<footer><span>© 2025 ' + name + ' Realty · ' + city + '</span><span><a href="tel:' + phone + '">' + phone + '</a> · <a href="mailto:' + email + '">' + email + '</a></span><span>Powered by <a href="#">AI Assistant</a> — <a href="#">Get this system →</a></span></footer>' +
+'<button id="chat-toggle" onclick="toggleChat()"><span id="chat-icon">💬</span><span class="chat-badge" id="chat-badge">1</span></button>' +
+'<div id="chat-window"><div class="cw-header"><div class="cw-avatar">🏡</div><div class="cw-info"><div class="cw-name">' + name + ' AI Assistant</div><div class="cw-status"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#4ade80;margin-right:5px;"></span>Online · Replies instantly</div></div><button class="cw-close" onclick="toggleChat()">✕</button></div><div id="chat-messages"></div><div class="cw-input-row"><input id="chat-input" type="text" placeholder="Type a message…" onkeydown="if(event.key===\'Enter\')sendUserMsg()"/><button id="chat-send" onclick="sendUserMsg()">➤</button></div><div class="powered-by">Powered by AI · <a href="#">Get this system for your business</a></div></div>';
+}
+
+function getTemplateScript() {
+  // The full chat + listings engine from real-estate-template-v2.html
+  // injected verbatim so the downloaded file is self-contained
+  return '<script>\n' +
+'var allListings=[],sortedListings=[],currentSort={col:"price",dir:"asc"};\n' +
+'function fetchListings(){var grid=document.getElementById("listings-grid");grid.innerHTML=\'<div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-body"><div class="skeleton-line wide"></div><div class="skeleton-line narrow"></div><div class="skeleton-line"></div></div></div>\'.repeat(3);if(!CONFIG.scriptUrl||CONFIG.scriptUrl.indexOf("REPLACE")!==-1){renderFallback();return;}fetch(CONFIG.scriptUrl+"?action=getListings").then(function(r){if(!r.ok)throw new Error("HTTP "+r.status);return r.json();}).then(function(d){if(!d.success)throw new Error(d.error);allListings=d.listings||[];sortedListings=allListings.slice();applySort();updateCount(allListings.length);}).catch(function(){renderFallback();});}\n' +
+'function sortListings(btn){document.querySelectorAll(".sort-btn").forEach(function(b){b.classList.remove("active");});btn.classList.add("active");currentSort={col:btn.dataset.col,dir:btn.dataset.dir};applySort();}\n' +
+'function applySort(){var col=currentSort.col,dir=currentSort.dir;sortedListings=allListings.slice().sort(function(a,b){var av=a[col]||"",bv=b[col]||"";if(["price","beds","baths","sqft"].indexOf(col)!==-1){av=parseFloat(av)||0;bv=parseFloat(bv)||0;}else{av=av.toString().toLowerCase();bv=bv.toString().toLowerCase();}if(av<bv)return dir==="asc"?-1:1;if(av>bv)return dir==="asc"?1:-1;return 0;});renderCards(sortedListings);}\n' +
+'function renderCards(list){var grid=document.getElementById("listings-grid"),label=document.getElementById("listing-count-label");if(!list||!list.length){grid.innerHTML=\'<div class="listings-message"><span class="lm-icon">🏡</span><p>No listings available right now.</p><button class="retry-btn" onclick="fetchListings()">Try Again</button></div>\';label.textContent="";return;}label.textContent=list.length+" listing"+(list.length!==1?"s":"");var bgs=["linear-gradient(135deg,#d0e8d8,#a8cdb8)","linear-gradient(135deg,#c8dde8,#a0bece)","linear-gradient(135deg,#e8d8c0,#c8b89a)","linear-gradient(135deg,#d8c8e8,#b8a0ce)","linear-gradient(135deg,#e8e0c8,#cec0a0)"];grid.innerHTML=list.map(function(l,i){var p=fmtP(l.price),sq=l.sqft?Number(l.sqft).toLocaleString():"—";return\'<div class="listing-card" onclick="openChatWithListing(\\\'\'+esc(l.uuid)+\'\\\')"><div class="listing-img" style="background:\'+bgs[i%bgs.length]+\'"><span style="font-size:3rem">\'+( l.emoji||"🏡")+\'</span><span class="listing-tag">\'+esc(l.status||"For Sale")+\'</span></div><div class="listing-body"><div class="listing-price">\'+p+\'</div><div class="listing-addr">\'+esc(l.address||"")+\', \'+esc(l.city||CONFIG.city)+\'</div><div class="listing-details"><span class="listing-detail">🛏 \'+( l.beds||"—")+\' Beds</span><span class="listing-detail">🚿 \'+( l.baths||"—")+\' Baths</span><span class="listing-detail">📐 \'+sq+\' sqft</span></div><button class="listing-cta">Ask About This Home</button></div></div>\';}).join("");}\n' +
+'function renderFallback(){allListings=[{uuid:"f1",address:"142 Maple St",city:CONFIG.city,price:"419000",beds:"3",baths:"2",sqft:"1820",status:"For Sale",emoji:"🏡"},{uuid:"f2",address:"87 Oak Ave",city:CONFIG.city,price:"568500",beds:"4",baths:"3",sqft:"2340",status:"New",emoji:"🏘"},{uuid:"f3",address:"210 Riverside Dr",city:CONFIG.city,price:"289000",beds:"2",baths:"2",sqft:"1150",status:"Open House",emoji:"🏙"}];sortedListings=allListings.slice();renderCards(sortedListings);updateCount(allListings.length);}\n' +
+'function fmtP(v){var n=parseFloat(v);return isNaN(n)?v||"—":"$"+n.toLocaleString();}\n' +
+'function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/\'/g,"&#39;");}\n' +
+'function updateCount(n){var el=document.getElementById("stat-count");if(el)el.textContent=n+"+";}\n' +
+'function getByUUID(u){return allListings.find(function(l){return l.uuid===u;})||null;}\n' +
+'var STEPS=[{id:"welcome",bot:"Hi there! 👋 I\'m "+CONFIG.agentName+"\'s AI assistant.\\n\\nAre you looking to buy or sell in "+CONFIG.city+"?",chips:["🏠 Buying","💰 Selling","Just browsing"],next:{"🏠 Buying":"budget","💰 Selling":"selling","Just browsing":"browse"}},{id:"budget",bot:"Great! What\'s your approximate budget?",chips:["Under $300k","$300k–$500k","$500k–$750k","Over $750k"],next:"beds"},{id:"beds",bot:"How many bedrooms do you need?",chips:["1–2 beds","3 beds","4+ beds"],next:"timeline"},{id:"timeline",bot:"What\'s your timeline for moving?",chips:["ASAP","Within 3 months","3–6 months","Just exploring"],next:"matched"},{id:"matched",bot:"Perfect! I\'ve pulled up our current listings. 🏡\\n\\nWould you like to book a showing or browse first?",chips:["📅 Book a showing","📋 Show me listings"],next:{"📅 Book a showing":"capture","📋 Show me listings":"showListings"}},{id:"showListings",bot:"Here are our current listings — tap any one to learn more:",listingsCard:true,next:"capture"},{id:"capture",bot:"Awesome! Just need a couple quick details 👇",form:true,next:"booked"},{id:"booked",success:true,bot:""},{id:"selling",bot:"Selling in "+CONFIG.city+" right now is excellent — low inventory, strong prices. Want a free valuation?",chips:["Yes please!","Tell me more"],next:"capture"},{id:"browse",bot:"What area of "+CONFIG.city+" interests you most?",chips:["Inner city","Suburbs","Waterfront","School district"],next:"matched"},{id:"freeform",bot:"Sure — what would you like to know?",chips:[],next:"matched"}];\n' +
+'var CS={step:"welcome",answers:{},open:false,formShown:false},chatOpened=false;\n' +
+'var mEl=function(){return document.getElementById("chat-messages");},iEl=function(){return document.getElementById("chat-input");},wEl=function(){return document.getElementById("chat-window");};\n' +
+'function nT(){return new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});}\n' +
+'function aMsg(role,txt){var w=document.createElement("div");w.className="cm "+role;var b=document.createElement("div");b.className="cm-bubble";b.textContent=txt;var t=document.createElement("div");t.className="cm-time";t.textContent=nT();w.appendChild(b);w.appendChild(t);mEl().appendChild(w);mEl().scrollTop=mEl().scrollHeight;}\n' +
+'function aChips(chips){var w=document.createElement("div");w.className="cm bot";var r=document.createElement("div");r.className="qr-chips";chips.forEach(function(c){var btn=document.createElement("button");btn.className="qr-chip";btn.textContent=c;btn.onclick=function(){r.parentElement.remove();hChip(c);};r.appendChild(btn);});w.appendChild(r);mEl().appendChild(w);mEl().scrollTop=mEl().scrollHeight;}\n' +
+'function aListCards(){if(!allListings||!allListings.length){aMsg("bot","No live listings loaded — I\'ll connect you with "+CONFIG.agentName+" directly!");setTimeout(function(){aChips(["📅 Book a call"]);},300);return;}allListings.slice(0,3).forEach(function(l){var w=document.createElement("div");w.className="cm bot";var c=document.createElement("div");c.className="chat-listing-card";c.innerHTML=\'<span class="clc-emoji">\'+( l.emoji||"🏡")+\'</span><div class="clc-price">\'+fmtP(l.price)+\'</div><div class="clc-addr">\'+esc(l.address)+\', \'+esc(l.city||CONFIG.city)+\'</div><div class="clc-details"><span>🛏 \'+( l.beds||"—")+\' beds</span><span>🚿 \'+( l.baths||"—")+\' baths</span><span>📐 \'+( l.sqft?Number(l.sqft).toLocaleString():"—")+\' sqft</span></div><button class="clc-book" onclick="bCard(\\\'\'+esc(l.uuid)+\'\\\')">📅 Book a Showing</button>\';w.appendChild(c);mEl().appendChild(w);});mEl().scrollTop=mEl().scrollHeight;setTimeout(function(){aChips(["📅 Book a showing","See all listings"]);},400);}\n' +
+'function bCard(uuid){var l=getByUUID(uuid);if(l)CS.answers.selectedListing=l.address+", "+(l.city||CONFIG.city);aMsg("user","I\'d like to book a showing");runStep("capture");}\n' +
+'function sTy(){var w=document.createElement("div");w.className="cm bot";w.id="typing";w.innerHTML=\'<div class="cm-bubble" style="padding:0;background:#f1f5f2"><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>\';mEl().appendChild(w);mEl().scrollTop=mEl().scrollHeight;}\n' +
+'function hTy(){var t=document.getElementById("typing");if(t)t.remove();}\n' +
+'function runStep(id,delay){if(delay===undefined)delay=600;var step=STEPS.find(function(s){return s.id===id;});if(!step)return;CS.step=id;sTy();setTimeout(function(){hTy();if(step.success){showOK();return;}step.bot.split("\\n\\n").forEach(function(line,i){setTimeout(function(){aMsg("bot",line);if(i===step.bot.split("\\n\\n").length-1){if(step.form)setTimeout(aLeadForm,200);else if(step.listingsCard)setTimeout(aListCards,200);else if(step.chips&&step.chips.length)setTimeout(function(){aChips(step.chips);},100);}},i*300);});},delay);}\n' +
+'function hChip(label){CS.answers[CS.step]=label;aMsg("user",label);if(label==="See all listings"){document.getElementById("listings").scrollIntoView({behavior:"smooth"});return;}var step=STEPS.find(function(s){return s.id===CS.step;});if(!step)return;var nid;if(typeof step.next==="object"){nid=step.next[label]||Object.values(step.next)[0];}else nid=step.next;runStep(nid);}\n' +
+'function sendUserMsg(){var v=iEl().value.trim();if(!v)return;iEl().value="";aMsg("user",v);var step=STEPS.find(function(s){return s.id===CS.step;});var nid=typeof step.next==="object"?Object.values(step.next)[0]:(step.next||"matched");CS.answers.freeText=v;runStep(nid);}\n' +
+'function aLeadForm(){if(CS.formShown)return;CS.formShown=true;var w=document.createElement("div");w.className="cm bot";w.innerHTML=\'<div class="lead-form"><input class="lead-input" id="lf-name" placeholder="Your name" type="text"/><input class="lead-input" id="lf-phone" placeholder="Phone number" type="tel"/><input class="lead-input" id="lf-email" placeholder="Email address" type="email"/><button class="lead-submit" onclick="subLead()">📅 Confirm My Showing</button></div>\';mEl().appendChild(w);mEl().scrollTop=mEl().scrollHeight;}\n' +
+'function subLead(){var n=(document.getElementById("lf-name")||{}).value||"",ph=(document.getElementById("lf-phone")||{}).value||"";n=n.trim();ph=ph.trim();if(!n||!ph){alert("Please enter your name and phone number.");return;}var payload={name:n,phone:ph,email:((document.getElementById("lf-email")||{}).value||"").trim(),agent:CONFIG.agentName,city:CONFIG.city,answers:CS.answers,source:"chat-widget",timestamp:new Date().toLocaleString()};if(CONFIG.webhookUrl&&CONFIG.webhookUrl.indexOf("REPLACE")===-1)fetch(CONFIG.webhookUrl,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)}).catch(function(){});runStep("booked");}\n' +
+'function showOK(){var w=document.createElement("div");w.className="cm bot";w.innerHTML=\'<div class="success-msg"><div class="success-icon">🎉</div><div class="success-title">You\\\'re all set!</div><div class="success-sub">\'+CONFIG.agentName+\' will reach out shortly.<br><br><a href="\'+CONFIG.calendlyUrl+\'" target="_blank" style="color:var(--brand-mid);font-weight:600">📅 Pick your time slot →</a></div></div>\';mEl().appendChild(w);mEl().scrollTop=mEl().scrollHeight;var b=document.getElementById("chat-badge");if(b)b.style.display="none";}\n' +
+'function toggleChat(){CS.open=!CS.open;wEl().classList.toggle("open",CS.open);document.getElementById("chat-icon").textContent=CS.open?"✕":"💬";if(CS.open&&!chatOpened){chatOpened=true;var b=document.getElementById("chat-badge");if(b)b.style.display="none";setTimeout(function(){runStep("welcome");},300);}}\n' +
+'function openChat(){if(!CS.open)toggleChat();}\n' +
+'function openChatWithListing(uuid){openChat();var l=getByUUID(uuid);if(!l)return;var label=l.address+" ("+fmtP(l.price)+", "+l.beds+"BR)";setTimeout(function(){aMsg("user","Tell me about "+l.address);aMsg("bot","Great choice! "+label+" is "+(l.status||"for sale")+" — "+l.beds+" beds, "+l.baths+" baths, "+(l.sqft?Number(l.sqft).toLocaleString():"—")+" sqft.\\n\\nWould you like to book a showing?");CS.answers.selectedListing=label;setTimeout(function(){aChips(["📅 Book a showing","More details","Neighborhood info"]);},300);},chatOpened?100:500);}\n' +
+'document.addEventListener("DOMContentLoaded",function(){fetchListings();});\n' +
+'<\/script>\n';
+}
+
+// ── INIT ───────────────────────────────────────────────────────
+document.addEventListener("DOMContentLoaded", function() {
+  updatePreview();
+});
+</script>
+</body>
+</html>
