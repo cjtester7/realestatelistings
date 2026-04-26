@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Sarah Johnson Realty | Baltimore Real Estate</title>
+<!-- real-estate-template-v4.html -->
 <meta name="description" content="Find your dream home in Baltimore — chat with our AI assistant and book a showing instantly." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
@@ -156,8 +157,8 @@
   .cm.bot .cm-bubble { background: #f1f5f2; color: var(--text); border-bottom-left-radius: 4px; }
   .cm.user .cm-bubble { background: var(--brand); color: #fff; border-bottom-right-radius: 4px; }
   .cm-time { font-size: .7rem; color: var(--text-muted); margin-top: 4px; padding: 0 4px; }
-  .qr-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
-  .qr-chip { background: #fff; border: 1.5px solid var(--brand-light); color: var(--brand); border-radius: 24px; padding: 7px 14px; font-size: .82rem; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all .15s; }
+  .qr-chips { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; width: 100%; max-width: 85%; }
+  .qr-chip { background: #fff; border: 1.5px solid var(--brand-light); color: var(--brand); border-radius: 10px; padding: 11px 16px; font-size: .88rem; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all .15s; text-align: left; width: 100%; display: flex; align-items: center; gap: 8px; }
   .qr-chip:hover { background: var(--brand); color: #fff; border-color: var(--brand); }
   .typing-indicator { display: flex; gap: 5px; align-items: center; padding: 12px 16px; }
   .typing-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--brand-light); animation: bounce .9s infinite; }
@@ -481,9 +482,14 @@ function getByUUID(u) {
 var STEPS = [
   {
     id: "welcome",
-    bot: "Hi there! 👋 I'm Sarah Johnson's AI assistant.\n\nAre you looking to buy or sell in Baltimore?",
-    chips: ["🏠 Buying", "💰 Selling", "Just browsing"],
-    next: { "🏠 Buying": "budget", "💰 Selling": "selling", "Just browsing": "browse" }
+    bot: "Hi there! 👋 I'm Sarah Johnson's AI assistant.",
+    chips: [],
+    followUp: {
+      delay: 900,
+      bot: "Are you looking to buy or sell in Baltimore?",
+      chips: ["🏠 I'm Buying", "💰 I'm Selling"],
+      next: { "🏠 I'm Buying": "budget", "💰 I'm Selling": "selling" }
+    }
   },
   {
     id: "budget",
@@ -627,9 +633,21 @@ function runStep(id, delay) {
       setTimeout(function() {
         aMsg("bot", line);
         if (i === lines.length - 1) {
-          if (step.form)         setTimeout(aLeadForm,   200);
-          else if (step.listingsCard) setTimeout(aListCards, 200);
-          else if (step.chips && step.chips.length) setTimeout(function() { aChips(step.chips); }, 100);
+          if (step.form)              setTimeout(aLeadForm,   200);
+          else if (step.listingsCard) setTimeout(aListCards,  200);
+          else if (step.followUp) {
+            // Show greeting first, then follow-up question + chips after delay
+            setTimeout(function() {
+              sTy();
+              setTimeout(function() {
+                hTy();
+                aMsg("bot", step.followUp.bot);
+                setTimeout(function() { aChips(step.followUp.chips); }, 150);
+              }, 500);
+            }, step.followUp.delay || 900);
+          } else if (step.chips && step.chips.length) {
+            setTimeout(function() { aChips(step.chips); }, 100);
+          }
         }
       }, i * 300);
     });
@@ -643,11 +661,18 @@ function hChip(label) {
     document.getElementById("listings").scrollIntoView({ behavior: "smooth" });
     return;
   }
+  if (label === "More details") {
+    aMsg("bot", "Happy to help! You can scroll up to see full details on the listing cards, or I can connect you with Sarah directly for a walkthrough.");
+    setTimeout(function() { aChips(["📅 Book a showing"]); }, 300);
+    return;
+  }
   var step = STEPS.find(function(s) { return s.id === CS.step; });
   if (!step) return;
-  var nid = typeof step.next === "object"
-    ? (step.next[label] || Object.values(step.next)[0])
-    : step.next;
+  // If this step has a followUp, chips belong to followUp.next
+  var nextMap = (step.followUp) ? step.followUp.next : step.next;
+  var nid = typeof nextMap === "object"
+    ? (nextMap[label] || Object.values(nextMap)[0])
+    : nextMap;
   runStep(nid);
 }
 
@@ -742,7 +767,7 @@ function openChatWithListing(uuid) {
       l.beds + " beds, " + l.baths + " baths, " +
       (l.sqft ? Number(l.sqft).toLocaleString() : "—") + " sqft.\n\nWould you like to book a showing?");
     CS.answers.selectedListing = label;
-    setTimeout(function() { aChips(["📅 Book a showing", "More details", "Neighborhood info"]); }, 300);
+    setTimeout(function() { aChips(["📅 Book a showing", "More details"]); }, 300);
   }, chatOpened ? 100 : 500);
 }
 
