@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Sarah Johnson Realty | Baltimore Real Estate</title>
-<!-- real-estate-template-v9.html — Inline Calendly booking widget in chat -->
+<!-- real-estate-template-v10.html — No chips when opening chat from listing card -->
 <meta name="description" content="Find your dream home in Baltimore — chat with our AI assistant and book a showing instantly." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
@@ -428,7 +428,7 @@ var CONFIG = {
   city:        "Baltimore",
   phone:       "(410) 555-0192",
   email:       "sarah@sarahjohnsonrealty.com",
-  scriptUrl:   "1sp0ONuUdDrpdddKP5hgjrYUkVqq2EYg1oJRZIl3Pe-A/edit",
+  scriptUrl:   "Replace YOUR_GOOGLE_SHEET_URL_HERE",
   calendlyUrl: "https://calendly.com/cjtester7/new-meeting",
   webhookUrl:  "https://REPLACE_YOUR_N8N_WEBHOOK",
   youTubeId:   "REPLACE_YOUTUBE_VIDEO_ID"  // e.g. "dQw4w9WgXcQ" — leave blank to hide button
@@ -898,15 +898,29 @@ function toggleChat() {
 function openChat() { if (!CS.open) toggleChat(); }
 
 // ── OPEN FROM LISTING CARD
+// Skips welcome chips — AI responds directly with listing description
 function openChatWithListing(uuid) {
-  openChat();
   var l = getByUUID(uuid);
   if (!l) return;
   var msg = "Tell me about " + l.address +
     " listed at " + fmtPrice(l.price) +
     " (" + (l.beds || "?") + "BR / " + (l.baths || "?") + "BA, " +
     (l.sqft ? Number(l.sqft).toLocaleString() + " sqft" : "") + ")";
-  setTimeout(function() { sendMessage(msg); }, chatOpened ? 200 : 2600);
+
+  if (!CS.open) {
+    // Open chat but mark as opened so welcome sequence is suppressed
+    CS.open = true;
+    chatOpened = true;
+    wEl().classList.add("open");
+    document.getElementById("chat-icon").textContent = "X";
+    var b = document.getElementById("chat-badge");
+    if (b) b.style.display = "none";
+    // Send listing message directly — no greeting, no chips
+    setTimeout(function() { sendMessage(msg); }, 400);
+  } else {
+    // Chat already open — send immediately
+    sendMessage(msg);
+  }
 }
 
 // ── YOUTUBE MEDIA PANEL ──────────────────────────────────────
