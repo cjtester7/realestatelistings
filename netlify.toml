@@ -1,7 +1,14 @@
+# netlify.toml
+# Real Estate AI Template — Netlify Configuration
+# Current version: v3
+# Files: index.html (real-estate-template-v3.html), appscript-v1.gs
+
 [build]
   publish = "."
 
-[[redirects]]
-  from = "/remix/*"
-  to   = "/remix-v2.html"
-  status = 200
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options        = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy        = "strict-origin-when-cross-origin"
