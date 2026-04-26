@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Sarah Johnson Realty | Baltimore Real Estate</title>
-<!-- real-estate-template-v4.html -->
+<!-- real-estate-template-v5.html — Anthropic-powered chatbot -->
 <meta name="description" content="Find your dream home in Baltimore — chat with our AI assistant and book a showing instantly." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
@@ -350,7 +350,8 @@ var CONFIG = {
   email:       "sarah@sarahjohnsonrealty.com",
   scriptUrl:   "Replace YOUR_GOOGLE_SHEET_URL_HERE",
   calendlyUrl: "https://calendly.com/REPLACE_YOUR_LINK",
-  webhookUrl:  "https://REPLACE_YOUR_N8N_WEBHOOK"
+  webhookUrl:  "https://REPLACE_YOUR_N8N_WEBHOOK",
+  apiKey:      "Replace YOUR_ANTHROPIC_API_KEY_HERE"
 };
 
 // ── LISTINGS ──────────────────────────────────────────────────
@@ -478,83 +479,59 @@ function getByUUID(u) {
   return allListings.find(function(l) { return l.uuid === u; }) || null;
 }
 
-// ── CHAT ENGINE ───────────────────────────────────────────────
-var STEPS = [
-  {
-    id: "welcome",
-    bot: "Hi there! 👋 I'm Sarah Johnson's AI assistant.",
-    chips: [],
-    followUp: {
-      delay: 900,
-      bot: "Are you looking to buy or sell in Baltimore?",
-      chips: ["🏠 I'm Buying", "💰 I'm Selling"],
-      next: { "🏠 I'm Buying": "budget", "💰 I'm Selling": "selling" }
-    }
-  },
-  {
-    id: "budget",
-    bot: "Great! What's your approximate budget?",
-    chips: ["Under $300k", "$300k–$500k", "$500k–$750k", "Over $750k"],
-    next: "beds"
-  },
-  {
-    id: "beds",
-    bot: "How many bedrooms do you need?",
-    chips: ["1–2 beds", "3 beds", "4+ beds"],
-    next: "timeline"
-  },
-  {
-    id: "timeline",
-    bot: "What's your timeline for moving?",
-    chips: ["ASAP", "Within 3 months", "3–6 months", "Just exploring"],
-    next: "matched"
-  },
-  {
-    id: "matched",
-    bot: "Perfect! I've pulled up our current listings. 🏡\n\nWould you like to book a showing or browse listings first?",
-    chips: ["📅 Book a showing", "📋 Show me listings"],
-    next: { "📅 Book a showing": "capture", "📋 Show me listings": "showListings" }
-  },
-  {
-    id: "showListings",
-    bot: "Here are our current listings — tap any one to learn more:",
-    listingsCard: true,
-    next: "capture"
-  },
-  {
-    id: "capture",
-    bot: "Awesome! Just need a couple quick details to confirm your showing 👇",
-    form: true,
-    next: "booked"
-  },
-  { id: "booked", success: true, bot: "" },
-  {
-    id: "selling",
-    bot: "Selling in Baltimore right now is excellent — inventory is low and prices are strong.\n\nWould you like a free home valuation?",
-    chips: ["Yes, I'd love that!", "Tell me more"],
-    next: "capture"
-  },
-  {
-    id: "browse",
-    bot: "No problem! What area of Baltimore interests you most?",
-    chips: ["Inner Harbor", "Suburbs", "Waterfront", "School district"],
-    next: "matched"
-  },
-  {
-    id: "freeform",
-    bot: "Sure — what would you like to know? Type anything and I'll do my best to help.",
-    chips: [],
-    next: "matched"
-  }
-];
+// ============================================================
+// ANTHROPIC-POWERED CHAT ENGINE — v5
+// ============================================================
 
-var CS         = { step: "welcome", answers: {}, open: false, formShown: false };
-var chatOpened = false;
+// ── CHAT STATE
+var chatHistory = [];
+var CS          = { open: false, formShown: false, booked: false };
+var chatOpened  = false;
+var apiLocked   = false;
 
 var mEl = function() { return document.getElementById("chat-messages"); };
 var iEl = function() { return document.getElementById("chat-input"); };
 var wEl = function() { return document.getElementById("chat-window"); };
 
+// ── SYSTEM PROMPT
+function buildSystemPrompt() {
+  var listingsSummary = "";
+  if (allListings && allListings.length) {
+    listingsSummary = "\n\nCURRENT LIVE LISTINGS:\n" +
+      allListings.map(function(l, i) {
+        return (i + 1) + ". " + (l.address || "") + ", " + (l.city || CONFIG.city) +
+          " -- $" + Number(l.price || 0).toLocaleString() +
+          " | " + (l.beds || "?") + "BR / " + (l.baths || "?") + "BA" +
+          " | " + (l.sqft ? Number(l.sqft).toLocaleString() + " sqft" : "") +
+          " | Status: " + (l.status || "For Sale");
+      }).join("\n");
+  } else {
+    listingsSummary = "\n\nNo live listings are currently loaded. If asked about specific listings, let the visitor know Sarah will follow up with current availability.";
+  }
+
+  return "You are an AI assistant for " + CONFIG.agentName + ", a real estate agent in " + CONFIG.city + ".\n" +
+    "Your job is to warmly greet visitors, understand their needs, and guide them toward booking a showing.\n\n" +
+    "PERSONALITY:\n" +
+    "- Friendly, professional, and concise. Keep replies to 2-3 sentences maximum.\n" +
+    "- Never use bullet points or markdown -- plain conversational text only.\n" +
+    "- Use the visitor's name if they share it.\n\n" +
+    "CONVERSATION GOAL:\n" +
+    "1. Understand if they are buying or selling.\n" +
+    "2. If buying: learn their budget, bedroom needs, and timeline.\n" +
+    "3. Reference specific listings from the list below when relevant.\n" +
+    "4. When the visitor expresses clear intent to book a showing or you have enough info,\n" +
+    "   output a warm sentence like Great, let me grab your details! then on the VERY NEXT LINE output exactly: SHOW_LEAD_FORM\n" +
+    "5. If they ask to see all listings on the page, output exactly: SHOW_ALL_LISTINGS\n" +
+    "6. If they ask to see listing cards in the chat, output exactly: SHOW_LISTING_CARDS\n\n" +
+    "RULES:\n" +
+    "- Never make up listings. Only reference the ones provided below.\n" +
+    "- Never ask for phone number or email yourself -- the form handles that.\n" +
+    "- Keep the conversation moving toward a showing.\n" +
+    "- If asked something unrelated to real estate, gently redirect.\n" +
+    listingsSummary;
+}
+
+// ── DOM HELPERS
 function nowT() {
   return new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
@@ -572,133 +549,63 @@ function aChips(chips) {
   var r = document.createElement("div"); r.className = "qr-chips";
   chips.forEach(function(c) {
     var btn = document.createElement("button"); btn.className = "qr-chip"; btn.textContent = c;
-    btn.onclick = function() { r.parentElement.remove(); hChip(c); };
+    btn.onclick = function() { r.parentElement.remove(); sendMessage(c); };
     r.appendChild(btn);
   });
   w.appendChild(r); mEl().appendChild(w); mEl().scrollTop = mEl().scrollHeight;
 }
 
-function aListCards() {
-  if (!allListings || !allListings.length) {
-    aMsg("bot", "I don't have live listings loaded right now — but I can connect you with Sarah directly!");
-    setTimeout(function() { aChips(["📅 Book a call"]); }, 300);
-    return;
-  }
-  allListings.slice(0, 3).forEach(function(l) {
-    var w = document.createElement("div"); w.className = "cm bot";
-    var c = document.createElement("div"); c.className = "chat-listing-card";
-    var sq = l.sqft ? Number(l.sqft).toLocaleString() : "—";
-    c.innerHTML = [
-      '<span class="clc-emoji">' + (l.emoji || "🏡") + '</span>',
-      '<div class="clc-price">' + fmtPrice(l.price) + '</div>',
-      '<div class="clc-addr">' + escH(l.address) + ', ' + escH(l.city || CONFIG.city) + '</div>',
-      '<div class="clc-details">',
-      '  <span>🛏 ' + (l.beds  || "—") + ' beds</span>',
-      '  <span>🚿 ' + (l.baths || "—") + ' baths</span>',
-      '  <span>📐 ' + sq + ' sqft</span>',
-      '</div>',
-      '<button class="clc-book" onclick="bCard(\'' + escH(l.uuid) + '\')">📅 Book a Showing</button>'
-    ].join("");
-    w.appendChild(c); mEl().appendChild(w);
-  });
-  mEl().scrollTop = mEl().scrollHeight;
-  setTimeout(function() { aChips(["📅 Book a showing", "See all listings"]); }, 400);
-}
-
-function bCard(uuid) {
-  var l = getByUUID(uuid);
-  if (l) CS.answers.selectedListing = l.address + ", " + (l.city || CONFIG.city);
-  aMsg("user", "I'd like to book a showing");
-  runStep("capture");
-}
-
 function sTy() {
+  if (document.getElementById("typing")) return;
   var w = document.createElement("div"); w.className = "cm bot"; w.id = "typing";
   w.innerHTML = '<div class="cm-bubble" style="padding:0;background:#f1f5f2"><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>';
   mEl().appendChild(w); mEl().scrollTop = mEl().scrollHeight;
 }
 function hTy() { var t = document.getElementById("typing"); if (t) t.remove(); }
 
-function runStep(id, delay) {
-  if (delay === undefined) delay = 600;
-  var step = STEPS.find(function(s) { return s.id === id; });
-  if (!step) return;
-  CS.step = id;
-  sTy();
-  setTimeout(function() {
-    hTy();
-    if (step.success) { showOK(); return; }
-    var lines = step.bot.split("\n\n");
-    lines.forEach(function(line, i) {
-      setTimeout(function() {
-        aMsg("bot", line);
-        if (i === lines.length - 1) {
-          if (step.form)              setTimeout(aLeadForm,   200);
-          else if (step.listingsCard) setTimeout(aListCards,  200);
-          else if (step.followUp) {
-            // Show greeting first, then follow-up question + chips after delay
-            setTimeout(function() {
-              sTy();
-              setTimeout(function() {
-                hTy();
-                aMsg("bot", step.followUp.bot);
-                setTimeout(function() { aChips(step.followUp.chips); }, 150);
-              }, 500);
-            }, step.followUp.delay || 900);
-          } else if (step.chips && step.chips.length) {
-            setTimeout(function() { aChips(step.chips); }, 100);
-          }
-        }
-      }, i * 300);
-    });
-  }, delay);
-}
-
-function hChip(label) {
-  CS.answers[CS.step] = label;
-  aMsg("user", label);
-  if (label === "See all listings") {
-    document.getElementById("listings").scrollIntoView({ behavior: "smooth" });
+// ── LISTING CARDS IN CHAT
+function aListCards() {
+  if (!allListings || !allListings.length) {
+    aMsg("bot", "No live listings are loaded right now -- Sarah will follow up with current availability!");
     return;
   }
-  if (label === "More details") {
-    aMsg("bot", "Happy to help! You can scroll up to see full details on the listing cards, or I can connect you with Sarah directly for a walkthrough.");
-    setTimeout(function() { aChips(["📅 Book a showing"]); }, 300);
-    return;
-  }
-  var step = STEPS.find(function(s) { return s.id === CS.step; });
-  if (!step) return;
-  // If this step has a followUp, chips belong to followUp.next
-  var nextMap = (step.followUp) ? step.followUp.next : step.next;
-  var nid = typeof nextMap === "object"
-    ? (nextMap[label] || Object.values(nextMap)[0])
-    : nextMap;
-  runStep(nid);
+  allListings.slice(0, 3).forEach(function(l) {
+    var w = document.createElement("div"); w.className = "cm bot";
+    var c = document.createElement("div"); c.className = "chat-listing-card";
+    var sq = l.sqft ? Number(l.sqft).toLocaleString() : "N/A";
+    c.innerHTML =
+      '<span class="clc-emoji">' + (l.emoji || "🏡") + '</span>' +
+      '<div class="clc-price">' + fmtPrice(l.price) + '</div>' +
+      '<div class="clc-addr">' + escH(l.address) + ", " + escH(l.city || CONFIG.city) + '</div>' +
+      '<div class="clc-details">' +
+      '  <span>Beds: ' + (l.beds || "N/A") + '</span>' +
+      '  <span>Baths: ' + (l.baths || "N/A") + '</span>' +
+      '  <span>' + sq + ' sqft</span>' +
+      '</div>' +
+      '<button class="clc-book" onclick="bookFromCard(\'' + escH(l.uuid) + '\')">Book a Showing</button>';
+    w.appendChild(c); mEl().appendChild(w);
+  });
+  mEl().scrollTop = mEl().scrollHeight;
 }
 
-function sendUserMsg() {
-  var v = iEl().value.trim();
-  if (!v) return;
-  iEl().value = "";
-  aMsg("user", v);
-  var step = STEPS.find(function(s) { return s.id === CS.step; });
-  var nid  = typeof step.next === "object" ? Object.values(step.next)[0] : (step.next || "matched");
-  CS.answers.freeText = v;
-  runStep(nid);
+function bookFromCard(uuid) {
+  var l = getByUUID(uuid);
+  var addr = l ? l.address + ", " + (l.city || CONFIG.city) : "this property";
+  sendMessage("I'd like to book a showing for " + addr);
 }
 
+// ── LEAD FORM
 function aLeadForm() {
   if (CS.formShown) return;
   CS.formShown = true;
   var w = document.createElement("div"); w.className = "cm bot";
-  w.innerHTML = [
-    '<div class="lead-form">',
-    '  <input class="lead-input" id="lf-name"  placeholder="Your name"     type="text" />',
-    '  <input class="lead-input" id="lf-phone" placeholder="Phone number"  type="tel" />',
-    '  <input class="lead-input" id="lf-email" placeholder="Email address" type="email" />',
-    '  <button class="lead-submit" onclick="subLead()">📅 Confirm My Showing</button>',
-    '</div>'
-  ].join("");
+  w.innerHTML =
+    '<div class="lead-form">' +
+    '  <input class="lead-input" id="lf-name"  placeholder="Your name"     type="text" />' +
+    '  <input class="lead-input" id="lf-phone" placeholder="Phone number"  type="tel" />' +
+    '  <input class="lead-input" id="lf-email" placeholder="Email address" type="email" />' +
+    '  <button class="lead-submit" onclick="subLead()">Confirm My Showing</button>' +
+    '</div>';
   mEl().appendChild(w); mEl().scrollTop = mEl().scrollHeight;
 }
 
@@ -711,7 +618,8 @@ function subLead() {
   var payload = {
     name: name, phone: phone, email: email,
     agent: CONFIG.agentName, city: CONFIG.city,
-    answers: CS.answers, source: "chat-widget",
+    conversation: chatHistory,
+    source: "chat-widget",
     timestamp: new Date().toLocaleString()
   };
 
@@ -722,56 +630,162 @@ function subLead() {
       body: JSON.stringify(payload)
     }).catch(function() {});
   }
-  runStep("booked");
+
+  CS.booked = true;
+  showOK(name);
 }
 
-function showOK() {
+function showOK(name) {
+  var firstName = name ? name.split(" ")[0] : "";
   var w = document.createElement("div"); w.className = "cm bot";
-  w.innerHTML = [
-    '<div class="success-msg">',
-    '  <div class="success-icon">🎉</div>',
-    '  <div class="success-title">You\'re all set!</div>',
-    '  <div class="success-sub">',
-    '    Sarah Johnson will reach out shortly to confirm your showing time.<br><br>',
-    '    <a href="' + CONFIG.calendlyUrl + '" target="_blank" style="color:var(--brand-mid);font-weight:600">📅 Pick your exact time slot →</a>',
-    '  </div>',
-    '</div>'
-  ].join("");
+  w.innerHTML =
+    '<div class="success-msg">' +
+    '  <div class="success-icon">🎉</div>' +
+    '  <div class="success-title">You\'re all set' + (firstName ? ", " + firstName : "") + '!</div>' +
+    '  <div class="success-sub">' +
+         CONFIG.agentName + ' will reach out shortly to confirm your showing time.<br><br>' +
+    '    <a href="' + CONFIG.calendlyUrl + '" target="_blank" style="color:var(--brand-mid);font-weight:600">Pick your exact time slot</a>' +
+    '  </div>' +
+    '</div>';
   mEl().appendChild(w); mEl().scrollTop = mEl().scrollHeight;
   var b = document.getElementById("chat-badge");
   if (b) b.style.display = "none";
 }
 
+// ── ANTHROPIC API CALL
+function callClaude(userText) {
+  if (apiLocked) return;
+  apiLocked = true;
+  chatHistory.push({ role: "user", content: userText });
+  sTy();
+  setInputDisabled(true);
+
+  fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type":      "application/json",
+      "x-api-key":         CONFIG.apiKey,
+      "anthropic-version": "2023-06-01",
+      "anthropic-dangerous-allow-cors-requests": "true"
+    },
+    body: JSON.stringify({
+      model:      "claude-sonnet-4-20250514",
+      max_tokens: 1000,
+      system:     buildSystemPrompt(),
+      messages:   chatHistory
+    })
+  })
+  .then(function(res) {
+    if (!res.ok) throw new Error("API " + res.status);
+    return res.json();
+  })
+  .then(function(data) {
+    hTy();
+    apiLocked = false;
+    setInputDisabled(false);
+
+    var raw = (data.content && data.content[0] && data.content[0].text) ? data.content[0].text : "";
+
+    var showForm    = raw.indexOf("SHOW_LEAD_FORM")     !== -1;
+    var showAllList = raw.indexOf("SHOW_ALL_LISTINGS")  !== -1;
+    var showCards   = raw.indexOf("SHOW_LISTING_CARDS") !== -1;
+
+    var clean = raw
+      .replace(/SHOW_LEAD_FORM/g, "")
+      .replace(/SHOW_ALL_LISTINGS/g, "")
+      .replace(/SHOW_LISTING_CARDS/g, "")
+      .trim();
+
+    chatHistory.push({ role: "assistant", content: raw });
+
+    if (clean) aMsg("bot", clean);
+    if (showCards)   setTimeout(aListCards, 300);
+    if (showAllList) setTimeout(function() {
+      document.getElementById("listings").scrollIntoView({ behavior: "smooth" });
+    }, 300);
+    if (showForm && !CS.formShown) setTimeout(aLeadForm, 400);
+  })
+  .catch(function(err) {
+    hTy();
+    apiLocked = false;
+    setInputDisabled(false);
+    console.error("Claude API error:", err);
+    aMsg("bot", "Sorry, I ran into a connection issue. Please try again or call Sarah directly at " + CONFIG.phone + ".");
+  });
+}
+
+// ── SEND MESSAGE
+function sendMessage(text) {
+  if (!text || !text.trim()) return;
+  aMsg("user", text);
+  callClaude(text);
+}
+
+function sendUserMsg() {
+  if (apiLocked) return;
+  var v = iEl().value.trim();
+  if (!v) return;
+  iEl().value = "";
+  sendMessage(v);
+}
+
+function setInputDisabled(disabled) {
+  var inp = iEl();
+  var btn = document.getElementById("chat-send");
+  if (inp) {
+    inp.disabled = disabled;
+    inp.placeholder = disabled ? "Sarah's AI is typing..." : "Type a message...";
+  }
+  if (btn) btn.disabled = disabled;
+}
+
+// ── WELCOME SEQUENCE
+function startChat() {
+  sTy();
+  setTimeout(function() {
+    hTy();
+    aMsg("bot", "Hi there! I'm Sarah Johnson's AI assistant.");
+    setTimeout(function() {
+      sTy();
+      setTimeout(function() {
+        hTy();
+        aMsg("bot", "Are you looking to buy or sell in Baltimore?");
+        setTimeout(function() {
+          aChips(["I'm Buying", "I'm Selling"]);
+        }, 150);
+      }, 500);
+    }, 900);
+  }, 600);
+}
+
+// ── TOGGLE / OPEN
 function toggleChat() {
   CS.open = !CS.open;
   wEl().classList.toggle("open", CS.open);
-  document.getElementById("chat-icon").textContent = CS.open ? "✕" : "💬";
+  document.getElementById("chat-icon").textContent = CS.open ? "X" : "💬";
   if (CS.open && !chatOpened) {
     chatOpened = true;
     var b = document.getElementById("chat-badge");
     if (b) b.style.display = "none";
-    setTimeout(function() { runStep("welcome"); }, 300);
+    setTimeout(startChat, 300);
   }
 }
 
 function openChat() { if (!CS.open) toggleChat(); }
 
+// ── OPEN FROM LISTING CARD
 function openChatWithListing(uuid) {
   openChat();
   var l = getByUUID(uuid);
   if (!l) return;
-  var label = l.address + " (" + fmtPrice(l.price) + ", " + l.beds + "BR)";
-  setTimeout(function() {
-    aMsg("user", "Tell me about " + l.address);
-    aMsg("bot", "Great choice! " + label + " is " + (l.status || "for sale") + " — " +
-      l.beds + " beds, " + l.baths + " baths, " +
-      (l.sqft ? Number(l.sqft).toLocaleString() : "—") + " sqft.\n\nWould you like to book a showing?");
-    CS.answers.selectedListing = label;
-    setTimeout(function() { aChips(["📅 Book a showing", "More details"]); }, 300);
-  }, chatOpened ? 100 : 500);
+  var msg = "Tell me about " + l.address +
+    " listed at " + fmtPrice(l.price) +
+    " (" + (l.beds || "?") + "BR / " + (l.baths || "?") + "BA, " +
+    (l.sqft ? Number(l.sqft).toLocaleString() + " sqft" : "") + ")";
+  setTimeout(function() { sendMessage(msg); }, chatOpened ? 200 : 2600);
 }
 
-// ── INIT ──────────────────────────────────────────────────────
+// ── INIT
 document.addEventListener("DOMContentLoaded", function() {
   fetchListings();
 });
