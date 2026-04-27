@@ -4,14 +4,16 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Sarah Johnson Realty | Baltimore Real Estate</title>
-<!-- real-estate-template-v14.html — Get Matched button wired to chatbot -->
+<!-- real-estate-template-v16.html — SHOW_MATCHED_CARDS signal for filtered match results -->
 <!--
-  FILE:    real-estate-template-v14.html
-  VERSION: v14
+  FILE:    real-estate-template-v16.html
+  VERSION: v16
   UPDATED: 2026-04-26
-  CHANGES: "Find My Match" button added to How It Works Step 2.
-           Opens chatbot pre-loaded with matching flow.
-           System prompt updated with match qualification instructions.
+  CHANGES: New SHOW_MATCHED_CARDS:uuid1,uuid2,... signal added.
+           Claude outputs specific UUIDs after match flow — frontend renders only those cards.
+           System prompt updated to instruct Claude to select matching UUIDs from live listings.
+           Falls back to SHOW_LISTING_CARDS if no UUIDs provided.
+           chat-v4.js updated with same signal instructions.
 -->
 <meta name="description" content="Find your dream home in Baltimore — chat with our AI assistant and book a showing instantly." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -98,6 +100,16 @@
   .media-yt-frame.visible { display: block; }
   .media-yt-close { position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,.5); border: none; color: #fff; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; font-size: .9rem; display: none; align-items: center; justify-content: center; }
   .media-yt-close.visible { display: flex; }
+
+  /* MP4 VIDEO PLAYER */
+  .media-video { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 0; }
+  .media-video-wrap { position: relative; width: 100%; height: 100%; }
+  .media-unmute-btn { position: absolute; bottom: 16px; left: 16px; background: rgba(0,0,0,.55); backdrop-filter: blur(6px); border: 1px solid rgba(255,255,255,.25); color: #fff; border-radius: 8px; padding: 8px 14px; font-size: .8rem; font-family: 'DM Sans', sans-serif; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: background .2s; }
+  .media-unmute-btn:hover { background: rgba(0,0,0,.75); }
+  .media-unmute-btn.hidden { display: none; }
+
+  /* AGENT PHOTO */
+  .media-agent-photo { width: 100%; height: 100%; object-fit: cover; object-position: top center; display: block; }
 
   /* hcp-dot used in chat header status */
   .hcp-dot { width: 8px; height: 8px; border-radius: 50%; background: #4ade80; display: inline-block; margin-right: 5px; }
@@ -386,22 +398,18 @@
     </div>
   </div>
 
-  <!-- MEDIA PANEL: replace src with agent photo URL, or set YouTube ID below -->
+  <!-- MEDIA PANEL — rendered dynamically by initMediaPanel() -->
   <div class="hero-media" id="hero-media">
+    <!-- Content injected by initMediaPanel() on DOMContentLoaded -->
     <div class="media-photo-placeholder" id="media-placeholder">
       <span class="media-placeholder-icon">📸</span>
       <span class="media-placeholder-text">Sarah Johnson</span>
-      <span class="media-placeholder-hint">Replace with agent photo or YouTube video</span>
+      <span class="media-placeholder-hint">Configure videoUrl, photoUrl, or youTubeId in Settings</span>
     </div>
-    <!-- To use a photo: remove the placeholder div above and add:
-         <img class="media-photo" src="YOUR_PHOTO_URL" alt="Sarah Johnson" />  -->
-    <div class="media-yt-overlay" id="yt-overlay">
-      <button class="media-yt-btn" onclick="playYouTube()" id="yt-play-btn">
-        ▶ Watch Market Update
-      </button>
+    <div class="media-yt-overlay" id="yt-overlay" style="display:none;">
+      <button class="media-yt-btn" onclick="playYouTube()" id="yt-play-btn">▶ Watch Market Update</button>
     </div>
-    <iframe class="media-yt-frame" id="yt-frame"
-      title="Agent video"
+    <iframe class="media-yt-frame" id="yt-frame" title="Agent video"
       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
       allowfullscreen></iframe>
     <button class="media-yt-close" id="yt-close" onclick="closeYouTube()">✕</button>
@@ -526,8 +534,41 @@
         <span>YouTube Video ID</span>
         <span class="settings-label-tag">youTubeId</span>
       </div>
-      <input class="settings-input" id="si-youTubeId" type="text" placeholder="e.g. dQw4w9WgXcQ" />
+      <input class="settings-input" id="si-youTubeId" type="text" placeholder="e.g. lMux1gpqatI" />
       <div class="settings-hint">The ID from your YouTube URL: <code>youtube.com/watch?v=<strong>THIS_PART</strong></code>. Shows a "Watch" button on the hero media panel.</div>
+    </div>
+
+    <hr class="settings-divider" />
+
+    <div class="settings-group">
+      <div class="settings-label">
+        <span>Video URL</span>
+        <span class="settings-label-tag">videoUrl</span>
+      </div>
+      <input class="settings-input" id="si-videoUrl" type="url" placeholder="/videos/buyer-stories.mp4 or Cloudinary URL" />
+      <div class="settings-hint">Self-hosted MP4 — no YouTube branding. Upload to <code>/videos/</code> in your repo or use a Cloudinary URL. Takes priority over YouTube ID.</div>
+    </div>
+
+    <hr class="settings-divider" />
+
+    <div class="settings-group">
+      <div class="settings-label">
+        <span>Agent Photo URL</span>
+        <span class="settings-label-tag">photoUrl</span>
+      </div>
+      <input class="settings-input" id="si-photoUrl" type="url" placeholder="/images/sarah.jpg or full URL" />
+      <div class="settings-hint">Agent headshot or property photo. Used when no video is configured.</div>
+    </div>
+
+    <hr class="settings-divider" />
+
+    <div class="settings-group">
+      <div class="settings-label">
+        <span>Captions URL</span>
+        <span class="settings-label-tag">captionsUrl</span>
+      </div>
+      <input class="settings-input" id="si-captionsUrl" type="url" placeholder="/videos/buyer-stories.vtt" />
+      <div class="settings-hint">Optional VTT subtitle file for the MP4 video. Leave blank if not needed.</div>
     </div>
 
     <div class="settings-status" id="settings-status"></div>
@@ -587,7 +628,10 @@ var CONFIG = {
   scriptUrl:   "Replace YOUR_GOOGLE_SHEET_URL_HERE",
   calendlyUrl: "https://calendly.com/REPLACE_YOUR_LINK",
   webhookUrl:  "https://REPLACE_YOUR_N8N_WEBHOOK",
-  youTubeId:   "REPLACE_YOUTUBE_VIDEO_ID"
+  youTubeId:   "REPLACE_YOUTUBE_VIDEO_ID",
+  videoUrl:    "",   // Self-hosted MP4 — e.g. "/videos/buyer-stories.mp4" or Cloudinary URL
+  photoUrl:    "",   // Agent photo — e.g. "/images/sarah.jpg"
+  captionsUrl: ""    // Optional VTT captions file — e.g. "/videos/buyer-stories.vtt"
   // API key is in Netlify environment variables
 };
 
@@ -596,7 +640,7 @@ var CONFIG = {
   if (!CONFIG.DEV_MODE) return;
   try {
     var saved = JSON.parse(localStorage.getItem("devConfig") || "{}");
-    ["scriptUrl","calendlyUrl","webhookUrl","youTubeId"].forEach(function(k) {
+    ["scriptUrl","calendlyUrl","webhookUrl","youTubeId","videoUrl","photoUrl","captionsUrl"].forEach(function(k) {
       if (saved[k] && saved[k].trim() !== "") CONFIG[k] = saved[k].trim();
     });
   } catch(e) {}
@@ -772,11 +816,15 @@ function buildSystemPrompt() {
     "5. If they ask to see all listings on the page, output exactly: SHOW_ALL_LISTINGS\n" +
     "6. If they ask to see listing cards in the chat, output exactly: SHOW_LISTING_CARDS\n\n" +
     "MATCH FLOW (triggered when visitor says they want to find a matching home):\n" +
-    "- Ask ONE qualifying question at a time in this order: budget → bedrooms → preferred neighborhood → timeline.\n" +
-    "- After all four answers, respond with a short personalized summary: which listings match and why.\n" +
-    "- Then output SHOW_LISTING_CARDS to display the matching cards.\n" +
-    "- Then ask: Would you like to book a showing for any of these?\n" +
-    "- Only show listings that genuinely match their criteria. If none match, say so honestly and ask if they'd like to adjust.\n\n" +
+    "- Ask ONE qualifying question at a time in this order: budget -> bedrooms -> preferred neighborhood -> timeline.\n" +
+    "- After collecting all four answers, compare them against the CURRENT LIVE LISTINGS below.\n" +
+    "- Identify listings that match: price <= budget, beds >= requested bedrooms, address contains neighborhood if specified.\n" +
+    "- Respond with 1-2 sentences explaining which listings match and why.\n" +
+    "- Then on its own line output exactly: SHOW_MATCHED_CARDS: followed by comma-separated UUIDs of matching listings.\n" +
+    "  Example: SHOW_MATCHED_CARDS:uuid-one,uuid-two\n" +
+    "- Only include UUIDs that appear in the listings list below. Never invent UUIDs.\n" +
+    "- If no listings match the criteria, say so honestly, suggest adjusting, then output SHOW_LISTING_CARDS.\n" +
+    "- After matched cards appear, ask: Would you like to book a showing for any of these?\n\n" +
     "RULES:\n" +
     "- Never make up listings. Only reference the ones provided below.\n" +
     "- Never ask for phone number or email yourself -- the form handles that.\n" +
@@ -846,6 +894,51 @@ function bookFromCard(uuid) {
   var l = getByUUID(uuid);
   var addr = l ? l.address + ", " + (l.city || CONFIG.city) : "this property";
   sendMessage("I'd like to book a showing for " + addr);
+}
+
+// ── MATCHED LISTING CARDS (filtered by UUID list from Claude) ─
+function aMatchedCards(uuids) {
+  // Filter allListings to only those whose UUID appears in the match list
+  var matched = allListings.filter(function(l) {
+    return uuids.indexOf(l.uuid) !== -1;
+  });
+
+  if (!matched || matched.length === 0) {
+    // No valid UUIDs found — fall back to all listings
+    aListCards();
+    return;
+  }
+
+  var bgs = [
+    "linear-gradient(135deg,#d0e8d8,#a8cdb8)",
+    "linear-gradient(135deg,#c8dde8,#a0bece)",
+    "linear-gradient(135deg,#e8d8c0,#c8b89a)",
+    "linear-gradient(135deg,#d8c8e8,#b8a0ce)",
+    "linear-gradient(135deg,#e8e0c8,#cec0a0)"
+  ];
+
+  matched.forEach(function(l, idx) {
+    var w = document.createElement("div"); w.className = "cm bot";
+    var c = document.createElement("div"); c.className = "chat-listing-card";
+    var sq = l.sqft ? Number(l.sqft).toLocaleString() : "N/A";
+    c.innerHTML =
+      '<div style="background:' + bgs[idx % bgs.length] + ';height:80px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:2rem;margin-bottom:10px;">' +
+        (l.emoji || "🏡") +
+      '</div>' +
+      '<div class="clc-price">' + fmtPrice(l.price) + '</div>' +
+      '<div class="clc-addr">' + escH(l.address) + ", " + escH(l.city || CONFIG.city) + '</div>' +
+      '<div class="clc-details">' +
+      '  <span>Beds: ' + (l.beds  || "N/A") + '</span>' +
+      '  <span>Baths: ' + (l.baths || "N/A") + '</span>' +
+      '  <span>' + sq + ' sqft</span>' +
+      '  <span style="color:var(--brand-light);font-weight:500;">' + escH(l.status || "For Sale") + '</span>' +
+      '</div>' +
+      '<button class="clc-book" onclick="bookFromCard(\'' + escH(l.uuid) + '\')">Book a Showing</button>';
+    w.appendChild(c);
+    mEl().appendChild(w);
+  });
+
+  mEl().scrollTop = mEl().scrollHeight;
 }
 
 // ── LEAD FORM
@@ -1006,20 +1099,34 @@ function callClaude(userText) {
 
     var raw = data.text || "";
 
-    var showForm    = raw.indexOf("SHOW_LEAD_FORM")     !== -1;
-    var showAllList = raw.indexOf("SHOW_ALL_LISTINGS")  !== -1;
-    var showCards   = raw.indexOf("SHOW_LISTING_CARDS") !== -1;
+    var showForm     = raw.indexOf("SHOW_LEAD_FORM")     !== -1;
+    var showAllList  = raw.indexOf("SHOW_ALL_LISTINGS")  !== -1;
+    var showCards    = raw.indexOf("SHOW_LISTING_CARDS") !== -1 &&
+                       raw.indexOf("SHOW_MATCHED_CARDS") === -1; // don't double-render
+
+    // Parse SHOW_MATCHED_CARDS:uuid1,uuid2,...
+    var matchedUUIDs = [];
+    var matchSignal  = raw.match(/SHOW_MATCHED_CARDS:([^\s\n]+)/);
+    if (matchSignal && matchSignal[1]) {
+      matchedUUIDs = matchSignal[1].split(",").map(function(u) { return u.trim(); }).filter(Boolean);
+    }
 
     var clean = raw
       .replace(/SHOW_LEAD_FORM/g, "")
       .replace(/SHOW_ALL_LISTINGS/g, "")
       .replace(/SHOW_LISTING_CARDS/g, "")
+      .replace(/SHOW_MATCHED_CARDS:[^\s\n]*/g, "")
       .trim();
 
     chatHistory.push({ role: "assistant", content: raw });
 
     if (clean) aMsg("bot", clean);
-    if (showCards)   setTimeout(aListCards, 300);
+
+    if (matchedUUIDs.length > 0) {
+      setTimeout(function() { aMatchedCards(matchedUUIDs); }, 300);
+    } else if (showCards) {
+      setTimeout(aListCards, 300);
+    }
     if (showAllList) setTimeout(function() {
       document.getElementById("listings").scrollIntoView({ behavior: "smooth" });
     }, 300);
@@ -1126,40 +1233,114 @@ function openChatWithListing(uuid) {
   }
 }
 
-// ── YOUTUBE MEDIA PANEL ──────────────────────────────────────
+// ── YOUTUBE HELPERS ──────────────────────────────────────────
 function playYouTube() {
   var ytId = CONFIG.youTubeId;
-  if (!ytId || ytId.indexOf("REPLACE") !== -1) {
-    aMsg("bot", "No video is configured yet. Ask Sarah about current Baltimore listings!");
-    openChat();
-    return;
-  }
-  var frame = document.getElementById("yt-frame");
-  var close = document.getElementById("yt-close");
+  if (!ytId || ytId.indexOf("REPLACE") !== -1) return;
+  var frame   = document.getElementById("yt-frame");
+  var close   = document.getElementById("yt-close");
   var overlay = document.getElementById("yt-overlay");
-  frame.src = "https://www.youtube.com/embed/" + ytId + "?autoplay=1&rel=0";
+  frame.src = "https://www.youtube.com/embed/" + ytId +
+    "?autoplay=1&rel=0&modestbranding=1&iv_load_policy=3&disablekb=1";
   frame.classList.add("visible");
-  close.classList.add("visible");
+  if (close)   close.classList.add("visible");
   if (overlay) overlay.style.display = "none";
 }
 
 function closeYouTube() {
-  var frame = document.getElementById("yt-frame");
-  var close = document.getElementById("yt-close");
+  var frame   = document.getElementById("yt-frame");
+  var close   = document.getElementById("yt-close");
   var overlay = document.getElementById("yt-overlay");
   frame.src = "";
   frame.classList.remove("visible");
-  close.classList.remove("visible");
+  if (close)   close.classList.remove("visible");
   if (overlay) overlay.style.display = "flex";
 }
 
-function initYouTubeBtn() {
-  var btn = document.getElementById("yt-play-btn");
-  if (!btn) return;
-  if (!CONFIG.youTubeId || CONFIG.youTubeId.indexOf("REPLACE") !== -1) {
-    var overlay = document.getElementById("yt-overlay");
-    if (overlay) overlay.style.display = "none";
+// ── MEDIA PANEL INIT ─────────────────────────────────────────
+// Priority: videoUrl > youTubeId > photoUrl > placeholder
+function initMediaPanel() {
+  var panel       = document.getElementById("hero-media");
+  var placeholder = document.getElementById("media-placeholder");
+  var ytOverlay   = document.getElementById("yt-overlay");
+  var ytFrame     = document.getElementById("yt-frame");
+  var ytClose     = document.getElementById("yt-close");
+  if (!panel) return;
+
+  var hasVideo = CONFIG.videoUrl  && CONFIG.videoUrl.trim()  !== "";
+  var hasYT    = CONFIG.youTubeId && CONFIG.youTubeId.indexOf("REPLACE") === -1 && CONFIG.youTubeId.trim() !== "";
+  var hasPhoto = CONFIG.photoUrl  && CONFIG.photoUrl.trim()  !== "";
+
+  // Option 1: Self-hosted MP4
+  if (hasVideo) {
+    if (placeholder) placeholder.style.display = "none";
+    if (ytOverlay)   ytOverlay.style.display   = "none";
+    if (ytFrame)     ytFrame.style.display      = "none";
+    if (ytClose)     ytClose.style.display      = "none";
+
+    var wrap = document.createElement("div");
+    wrap.className = "media-video-wrap";
+
+    var vid = document.createElement("video");
+    vid.className   = "media-video";
+    vid.autoplay    = true;
+    vid.muted       = true;
+    vid.loop        = true;
+    vid.playsInline = true;
+    vid.setAttribute("playsinline", "");
+
+    if (CONFIG.captionsUrl && CONFIG.captionsUrl.trim() !== "") {
+      var track     = document.createElement("track");
+      track.kind    = "subtitles";
+      track.label   = "English";
+      track.srclang = "en";
+      track.src     = CONFIG.captionsUrl;
+      track.default = true;
+      vid.appendChild(track);
+    }
+
+    var src  = document.createElement("source");
+    src.src  = CONFIG.videoUrl;
+    src.type = "video/mp4";
+    vid.appendChild(src);
+    wrap.appendChild(vid);
+
+    var unmuteBtn       = document.createElement("button");
+    unmuteBtn.className = "media-unmute-btn";
+    unmuteBtn.id        = "unmute-btn";
+    unmuteBtn.innerHTML = "Tap to unmute";
+    unmuteBtn.onclick   = function() {
+      vid.muted = false;
+      unmuteBtn.classList.add("hidden");
+    };
+    wrap.appendChild(unmuteBtn);
+    panel.appendChild(wrap);
+    vid.play().catch(function() {});
+    return;
   }
+
+  // Option 2: YouTube
+  if (hasYT) {
+    if (placeholder) placeholder.style.display = "none";
+    if (ytOverlay)   ytOverlay.style.display   = "flex";
+    return;
+  }
+
+  // Option 3: Agent photo
+  if (hasPhoto) {
+    if (placeholder) placeholder.style.display = "none";
+    if (ytOverlay)   ytOverlay.style.display   = "none";
+    var img       = document.createElement("img");
+    img.className = "media-agent-photo";
+    img.src       = CONFIG.photoUrl;
+    img.alt       = CONFIG.agentName;
+    panel.insertBefore(img, panel.firstChild);
+    return;
+  }
+
+  // Option 4: Placeholder
+  if (placeholder) placeholder.style.display = "flex";
+  if (ytOverlay)   ytOverlay.style.display   = "none";
 }
 
 // ── NEIGHBORHOOD QUICK FILTER ─────────────────────────────────
@@ -1234,6 +1415,7 @@ function exportConversation() {
       .replace(/SHOW_LEAD_FORM/g, "")
       .replace(/SHOW_ALL_LISTINGS/g, "")
       .replace(/SHOW_LISTING_CARDS/g, "")
+      .replace(/SHOW_MATCHED_CARDS:[^\s\n]*/g, "")
       .trim();
     if (text) lines.push("[" + label + "]\n" + text + "\n");
   });
@@ -1248,8 +1430,7 @@ function exportConversation() {
 
 // ── DEV SETTINGS PANEL ───────────────────────────────────────
 function openSettings() {
-  // Populate fields with current CONFIG values
-  ["scriptUrl","calendlyUrl","webhookUrl","youTubeId"].forEach(function(k) {
+  ["scriptUrl","calendlyUrl","webhookUrl","youTubeId","videoUrl","photoUrl","captionsUrl"].forEach(function(k) {
     var el = document.getElementById("si-" + k);
     if (el) el.value = CONFIG[k] || "";
   });
@@ -1267,30 +1448,26 @@ function closeSettings() {
 }
 
 function saveSettings() {
-  var fields = ["scriptUrl","calendlyUrl","webhookUrl","youTubeId"];
+  var fields = ["scriptUrl","calendlyUrl","webhookUrl","youTubeId","videoUrl","photoUrl","captionsUrl"];
   var saved  = {};
   fields.forEach(function(k) {
     var el = document.getElementById("si-" + k);
     saved[k] = el ? el.value.trim() : "";
   });
 
-  // Persist to localStorage
   localStorage.setItem("devConfig", JSON.stringify(saved));
 
-  // Apply to live CONFIG immediately
   fields.forEach(function(k) {
     if (saved[k] !== "") CONFIG[k] = saved[k];
   });
 
-  // Show status
   var status = document.getElementById("settings-status");
   status.textContent = "Settings saved. Reloading listings and applying changes...";
   status.className = "settings-status ok";
 
-  // Re-init affected components
   setTimeout(function() {
     fetchListings();
-    initYouTubeBtn();
+    initMediaPanel();
     closeSettings();
     updateDevBadge();
   }, 800);
@@ -1300,14 +1477,15 @@ function clearSettings() {
   if (!confirm("Clear all dev settings and restore placeholders?")) return;
   localStorage.removeItem("devConfig");
 
-  // Restore placeholder values
   CONFIG.scriptUrl   = "Replace YOUR_GOOGLE_SHEET_URL_HERE";
   CONFIG.calendlyUrl = "https://calendly.com/REPLACE_YOUR_LINK";
   CONFIG.webhookUrl  = "https://REPLACE_YOUR_N8N_WEBHOOK";
   CONFIG.youTubeId   = "REPLACE_YOUTUBE_VIDEO_ID";
+  CONFIG.videoUrl    = "";
+  CONFIG.photoUrl    = "";
+  CONFIG.captionsUrl = "";
 
-  // Clear input fields
-  ["scriptUrl","calendlyUrl","webhookUrl","youTubeId"].forEach(function(k) {
+  ["scriptUrl","calendlyUrl","webhookUrl","youTubeId","videoUrl","photoUrl","captionsUrl"].forEach(function(k) {
     var el = document.getElementById("si-" + k);
     if (el) el.value = "";
   });
@@ -1317,7 +1495,7 @@ function clearSettings() {
   status.className = "settings-status err";
 
   fetchListings();
-  initYouTubeBtn();
+  initMediaPanel();
   updateDevBadge();
 }
 
@@ -1327,7 +1505,9 @@ function updateDevBadge() {
     (CONFIG.scriptUrl   && CONFIG.scriptUrl.indexOf("REPLACE")   === -1) ||
     (CONFIG.calendlyUrl && CONFIG.calendlyUrl.indexOf("REPLACE")  === -1) ||
     (CONFIG.webhookUrl  && CONFIG.webhookUrl.indexOf("REPLACE")   === -1) ||
-    (CONFIG.youTubeId   && CONFIG.youTubeId.indexOf("REPLACE")    === -1);
+    (CONFIG.youTubeId   && CONFIG.youTubeId.indexOf("REPLACE")    === -1) ||
+    (CONFIG.videoUrl    && CONFIG.videoUrl.trim()    !== "")              ||
+    (CONFIG.photoUrl    && CONFIG.photoUrl.trim()    !== "");
   var badge = document.getElementById("dev-badge");
   if (badge) badge.className = "dev-badge" + (hasAny ? " visible" : "");
 }
@@ -1343,7 +1523,7 @@ function initDevSettings() {
 // ── INIT ──────────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", function() {
   fetchListings();
-  initYouTubeBtn();
+  initMediaPanel();
   initDevSettings();
 });
 </script>
