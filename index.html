@@ -4,16 +4,15 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Sarah Johnson Realty | Baltimore Real Estate</title>
-<!-- real-estate-template-v17.html — Filtering fix, mobile nav icons, mobile media panel -->
+<!-- real-estate-template-v18.html — Strict budget ceiling, blank Settings placeholders -->
 <!--
-  FILE:    real-estate-template-v17.html
-  VERSION: v17
+  FILE:    real-estate-template-v18.html
+  VERSION: v18
   UPDATED: 2026-04-26
-  CHANGES: System prompt fix: Claude must copy UUIDs verbatim from listings list.
-           Parser fix: address-based fallback matching if UUIDs not found.
-           Mobile nav: text labels hidden, icon-only 48x48px tap targets.
-           Hero media panel: min-height + z-index fix for Watch button on mobile.
-           chat-v5.js: same prompt fixes applied to server-side fallback.
+  CHANGES: System prompt: budget is strict maximum ceiling, beds exact or greater.
+           Settings panel: placeholder CONFIG values show as blank fields.
+           saveSettings: only applies non-placeholder values to CONFIG.
+           chat-v6.js: same prompt fixes in server-side fallback.
 -->
 <meta name="description" content="Find your dream home in Baltimore — chat with our AI assistant and book a showing instantly." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -654,7 +653,10 @@ var CONFIG = {
   try {
     var saved = JSON.parse(localStorage.getItem("devConfig") || "{}");
     ["scriptUrl","calendlyUrl","webhookUrl","youTubeId","videoUrl","photoUrl","captionsUrl"].forEach(function(k) {
-      if (saved[k] && saved[k].trim() !== "") CONFIG[k] = saved[k].trim();
+      var v = saved[k];
+      if (v && v.trim() !== "" && v.indexOf("REPLACE") === -1) {
+        CONFIG[k] = v.trim();
+      }
     });
   } catch(e) {}
 })();
@@ -831,16 +833,19 @@ function buildSystemPrompt() {
     "MATCH FLOW (triggered when visitor says they want to find a matching home):\n" +
     "- Ask ONE qualifying question at a time: budget -> bedrooms -> preferred neighborhood -> timeline.\n" +
     "- After all four answers, compare against the CURRENT LIVE LISTINGS listed below.\n" +
-    "- Identify matches: price <= budget, beds >= requested bedrooms, address contains neighborhood if given.\n" +
+    "- STRICT MATCHING RULES:\n" +
+    "  * BUDGET: Treat the stated budget as a HARD MAXIMUM CEILING. Only include listings where price is STRICTLY LESS THAN OR EQUAL TO the budget. Do NOT include listings above the budget under any circumstances. Do not round up. Do not add a range. $500k means $500,000 maximum.\n" +
+    "  * BEDROOMS: Only include listings where beds is GREATER THAN OR EQUAL TO the requested number. 3 bedrooms means 3 or more.\n" +
+    "  * NEIGHBORHOOD: If specified, only include listings whose address or city contains that neighborhood name.\n" +
     "- Respond with 1-2 sentences explaining which listings match and why.\n" +
     "- Then on its own line output SHOW_MATCHED_CARDS: followed by comma-separated UUIDs.\n" +
     "- CRITICAL UUID RULES:\n" +
-    "  * Copy each UUID EXACTLY as it appears in the listings list below — character for character.\n" +
+    "  * Copy each UUID EXACTLY as it appears in the listings list below -- character for character.\n" +
     "  * UUIDs are in the format xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (36 characters with hyphens).\n" +
     "  * NEVER shorten, paraphrase, or invent UUIDs. Do not use addresses or names as UUIDs.\n" +
-    "  * Example of correct output: SHOW_MATCHED_CARDS:550e8400-e29b-41d4-a716-446655440001,550e8400-e29b-41d4-a716-446655440006\n" +
-    "  * Example of WRONG output (never do this): SHOW_MATCHED_CARDS:142-maple-st,87-oak-ave\n" +
-    "- If no listings match, say so, suggest adjusting criteria, then output SHOW_LISTING_CARDS.\n" +
+    "  * Correct: SHOW_MATCHED_CARDS:550e8400-e29b-41d4-a716-446655440001,550e8400-e29b-41d4-a716-446655440006\n" +
+    "  * WRONG (never do this): SHOW_MATCHED_CARDS:142-maple-st,87-oak-ave\n" +
+    "- If no listings match all criteria exactly, say so honestly and suggest adjusting. Then output SHOW_LISTING_CARDS.\n" +
     "- After matched cards appear, ask: Would you like to book a showing for any of these?\n\n" +
     "RULES:\n" +
     "- Never make up listings. Only reference the ones provided below.\n" +
@@ -1462,9 +1467,22 @@ function exportConversation() {
 
 // ── DEV SETTINGS PANEL ───────────────────────────────────────
 function openSettings() {
+  // Show blank for placeholder/default values — only populate if a real value is saved
+  var placeholderKeys = {
+    scriptUrl:   "REPLACE",
+    calendlyUrl: "REPLACE",
+    webhookUrl:  "REPLACE",
+    youTubeId:   "REPLACE",
+    videoUrl:    "",
+    photoUrl:    "",
+    captionsUrl: ""
+  };
   ["scriptUrl","calendlyUrl","webhookUrl","youTubeId","videoUrl","photoUrl","captionsUrl"].forEach(function(k) {
-    var el = document.getElementById("si-" + k);
-    if (el) el.value = CONFIG[k] || "";
+    var el  = document.getElementById("si-" + k);
+    if (!el) return;
+    var val = CONFIG[k] || "";
+    // Show blank if value is a placeholder or empty
+    el.value = (val.indexOf("REPLACE") !== -1 || val === "") ? "" : val;
   });
   var status = document.getElementById("settings-status");
   if (status) { status.textContent = ""; status.className = "settings-status"; }
@@ -1487,10 +1505,15 @@ function saveSettings() {
     saved[k] = el ? el.value.trim() : "";
   });
 
+  // Persist to localStorage (raw user input)
   localStorage.setItem("devConfig", JSON.stringify(saved));
 
+  // Apply to live CONFIG only if value is non-empty and not a placeholder
   fields.forEach(function(k) {
-    if (saved[k] !== "") CONFIG[k] = saved[k];
+    var v = saved[k];
+    if (v && v.indexOf("REPLACE") === -1) {
+      CONFIG[k] = v;
+    }
   });
 
   var status = document.getElementById("settings-status");
