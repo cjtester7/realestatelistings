@@ -1,11 +1,11 @@
 // ============================================================
 // FILE:    chat.js (netlify/functions/chat.js)
-// VERSION: v5
+// VERSION: v6
 // UPDATED: 2026-04-26
-// CHANGES: Strict UUID instructions added to MATCH FLOW.
-//          Claude must copy UUIDs verbatim from listings list.
-//          Example of correct vs wrong output included.
-//          Mirrors real-estate-template-v17.html buildSystemPrompt().
+// CHANGES: Strict budget ceiling added to MATCH FLOW.
+//          Budget treated as hard maximum -- no ranges, no rounding.
+//          Beds treated as exact minimum -- no flexibility.
+//          Mirrors real-estate-template-v18.html buildSystemPrompt().
 // ============================================================
 
 exports.handler = async function(event) {
@@ -30,7 +30,7 @@ exports.handler = async function(event) {
     return { statusCode: 500, body: JSON.stringify({ error: "ANTHROPIC_API_KEY not set" }) };
   }
 
-  // Fallback system prompt — mirrors buildSystemPrompt() in real-estate-template-v17.html
+  // Fallback system prompt -- mirrors buildSystemPrompt() in real-estate-template-v18.html
   if (!system) {
     system = [
       "You are an AI assistant for a real estate agent in Baltimore.",
@@ -51,7 +51,10 @@ exports.handler = async function(event) {
       "MATCH FLOW (triggered when visitor says they want to find a matching home):",
       "- Ask ONE qualifying question at a time: budget -> bedrooms -> preferred neighborhood -> timeline.",
       "- After all four answers, compare against the CURRENT LIVE LISTINGS in the system prompt.",
-      "- Identify matches: price <= budget, beds >= requested bedrooms, address contains neighborhood if given.",
+      "- STRICT MATCHING RULES:",
+      "  * BUDGET: Treat the stated budget as a HARD MAXIMUM CEILING. Only include listings where price is STRICTLY LESS THAN OR EQUAL TO the budget. Do NOT include listings above the budget under any circumstances. Do not round up. Do not add a range. $500k means $500,000 maximum.",
+      "  * BEDROOMS: Only include listings where beds is GREATER THAN OR EQUAL TO the requested number. 3 bedrooms means 3 or more.",
+      "  * NEIGHBORHOOD: If specified, only include listings whose address or city contains that neighborhood name.",
       "- Respond with 1-2 sentences explaining which listings match and why.",
       "- Then on its own line output: SHOW_MATCHED_CARDS: followed by comma-separated UUIDs.",
       "- CRITICAL UUID RULES:",
@@ -60,7 +63,7 @@ exports.handler = async function(event) {
       "  * NEVER shorten, paraphrase, or invent UUIDs. Do not use addresses or names as UUIDs.",
       "  * Correct: SHOW_MATCHED_CARDS:550e8400-e29b-41d4-a716-446655440001,550e8400-e29b-41d4-a716-446655440006",
       "  * WRONG (never do this): SHOW_MATCHED_CARDS:142-maple-st,87-oak-ave",
-      "- If no listings match, say so, suggest adjusting criteria, then output SHOW_LISTING_CARDS.",
+      "- If no listings match all criteria exactly, say so and suggest adjusting. Then output SHOW_LISTING_CARDS.",
       "- After matched cards appear, ask: Would you like to book a showing for any of these?",
       "",
       "RULES:",
