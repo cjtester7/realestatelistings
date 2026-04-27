@@ -4,16 +4,16 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Sarah Johnson Realty | Baltimore Real Estate</title>
-<!-- real-estate-template-v16.html — SHOW_MATCHED_CARDS signal for filtered match results -->
+<!-- real-estate-template-v17.html — Filtering fix, mobile nav icons, mobile media panel -->
 <!--
-  FILE:    real-estate-template-v16.html
-  VERSION: v16
+  FILE:    real-estate-template-v17.html
+  VERSION: v17
   UPDATED: 2026-04-26
-  CHANGES: New SHOW_MATCHED_CARDS:uuid1,uuid2,... signal added.
-           Claude outputs specific UUIDs after match flow — frontend renders only those cards.
-           System prompt updated to instruct Claude to select matching UUIDs from live listings.
-           Falls back to SHOW_LISTING_CARDS if no UUIDs provided.
-           chat-v4.js updated with same signal instructions.
+  CHANGES: System prompt fix: Claude must copy UUIDs verbatim from listings list.
+           Parser fix: address-based fallback matching if UUIDs not found.
+           Mobile nav: text labels hidden, icon-only 48x48px tap targets.
+           Hero media panel: min-height + z-index fix for Watch button on mobile.
+           chat-v5.js: same prompt fixes applied to server-side fallback.
 -->
 <meta name="description" content="Find your dream home in Baltimore — chat with our AI assistant and book a showing instantly." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -44,8 +44,19 @@
   /* NAV */
   nav { position: fixed; top: 0; left: 0; right: 0; z-index: 900; display: flex; align-items: center; justify-content: space-between; padding: 18px 48px; background: rgba(247,244,239,.92); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(0,0,0,.06); }
   .nav-logo { font-family: 'Playfair Display', serif; font-size: 1.25rem; color: var(--brand); text-decoration: none; letter-spacing: .02em; }
+  .nav-right { display: flex; align-items: center; gap: 10px; }
   .nav-cta { background: var(--brand); color: #fff; border: none; border-radius: 8px; padding: 10px 22px; font-size: .875rem; font-family: 'DM Sans', sans-serif; font-weight: 500; cursor: pointer; transition: background .2s; }
   .nav-cta:hover { background: var(--brand-mid); }
+  /* Mobile nav — icon-only buttons */
+  .nav-icon-label { display: inline; }
+  @media (max-width: 600px) {
+    nav { padding: 14px 18px; }
+    .nav-logo { font-size: 1rem; }
+    .nav-icon-label { display: none; }
+    .nav-cta { padding: 0; width: 48px; height: 48px; border-radius: 50%; font-size: 1.4rem; display: flex; align-items: center; justify-content: center; }
+    .settings-btn { padding: 0 !important; width: 48px !important; height: 48px !important; border-radius: 50% !important; font-size: 1.3rem !important; display: flex !important; align-items: center; justify-content: center; border: 1.5px solid rgba(0,0,0,.12) !important; }
+    .dev-badge { font-size: .6rem !important; padding: 2px 6px !important; }
+  }
 
   /* HERO */
   .hero { min-height: 100vh; display: grid; grid-template-columns: 1fr 480px; gap: 60px; align-items: center; padding: 120px 64px 80px; position: relative; overflow: hidden; }
@@ -86,19 +97,19 @@
   .nbhd-chip:hover { background: var(--brand); color: #fff; }
 
   /* HERO MEDIA PANEL */
-  .hero-media { position: relative; z-index: 1; border-radius: 24px; overflow: hidden; box-shadow: var(--shadow-lg); background: var(--brand); aspect-ratio: 4/3; }
+  .hero-media { position: relative; z-index: 1; border-radius: 24px; overflow: hidden; box-shadow: var(--shadow-lg); background: var(--brand); aspect-ratio: 4/3; min-height: 280px; }
   .media-photo { width: 100%; height: 100%; object-fit: cover; display: block; }
-  .media-photo-placeholder { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; background: linear-gradient(145deg, var(--brand) 0%, var(--brand-mid) 100%); color: rgba(255,255,255,.9); }
+  .media-photo-placeholder { width: 100%; height: 100%; min-height: 280px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; background: linear-gradient(145deg, var(--brand) 0%, var(--brand-mid) 100%); color: rgba(255,255,255,.9); }
   .media-placeholder-icon { font-size: 4rem; opacity: .6; }
   .media-placeholder-text { font-family: 'Playfair Display', serif; font-size: 1.1rem; opacity: .7; text-align: center; padding: 0 20px; }
   .media-placeholder-hint { font-size: .78rem; opacity: .5; text-align: center; }
 
-  .media-yt-overlay { position: absolute; inset: 0; display: flex; align-items: flex-end; padding: 20px; background: linear-gradient(to top, rgba(0,0,0,.5) 0%, transparent 60%); }
-  .media-yt-btn { background: rgba(255,255,255,.15); backdrop-filter: blur(8px); border: 1.5px solid rgba(255,255,255,.3); color: #fff; border-radius: 10px; padding: 10px 18px; font-size: .85rem; font-family: 'DM Sans', sans-serif; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all .2s; }
-  .media-yt-btn:hover { background: rgba(255,255,255,.25); }
-  .media-yt-frame { position: absolute; inset: 0; width: 100%; height: 100%; border: none; display: none; }
+  .media-yt-overlay { position: absolute; inset: 0; z-index: 10; display: flex; align-items: flex-end; padding: 20px; background: linear-gradient(to top, rgba(0,0,0,.5) 0%, transparent 60%); }
+  .media-yt-btn { background: rgba(255,255,255,.2); backdrop-filter: blur(8px); border: 1.5px solid rgba(255,255,255,.4); color: #fff; border-radius: 10px; padding: 12px 20px; font-size: .9rem; font-family: 'DM Sans', sans-serif; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all .2s; min-height: 44px; }
+  .media-yt-btn:hover { background: rgba(255,255,255,.3); }
+  .media-yt-frame { position: absolute; inset: 0; width: 100%; height: 100%; border: none; display: none; z-index: 11; }
   .media-yt-frame.visible { display: block; }
-  .media-yt-close { position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,.5); border: none; color: #fff; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; font-size: .9rem; display: none; align-items: center; justify-content: center; }
+  .media-yt-close { position: absolute; top: 12px; right: 12px; z-index: 12; background: rgba(0,0,0,.5); border: none; color: #fff; border-radius: 50%; width: 36px; height: 36px; cursor: pointer; font-size: .9rem; display: none; align-items: center; justify-content: center; }
   .media-yt-close.visible { display: flex; }
 
   /* MP4 VIDEO PLAYER */
@@ -313,7 +324,9 @@
   @media (max-width: 900px) {
     nav { padding: 16px 24px; }
     .hero { grid-template-columns: 1fr; gap: 32px; padding: 100px 24px 60px; }
-    .hero-media { aspect-ratio: 16/9; }
+    .hero-media { aspect-ratio: 16/9; min-height: 240px; }
+    .media-yt-overlay { display: flex !important; }
+    .media-yt-btn { font-size: .85rem; padding: 10px 16px; }
     .hero-stats { border-radius: 10px; }
     .hero-stat { padding: 14px 12px; }
     .stat-val { font-size: 1.3rem; }
@@ -343,10 +356,10 @@
 <!-- NAV -->
 <nav>
   <a href="#" class="nav-logo">Sarah Johnson Realty</a>
-  <div style="display:flex;align-items:center;gap:10px;">
-    <span class="dev-badge" id="dev-badge">⚠️ Dev Mode</span>
-    <button class="settings-btn" id="settings-btn" onclick="openSettings()">⚙️ Settings</button>
-    <button class="nav-cta" onclick="openChat()">💬 Chat Now</button>
+  <div class="nav-right">
+    <span class="dev-badge" id="dev-badge">⚠️ <span class="nav-icon-label">Dev Mode</span></span>
+    <button class="settings-btn" id="settings-btn" onclick="openSettings()">⚙️ <span class="nav-icon-label">Settings</span></button>
+    <button class="nav-cta" onclick="openChat()">💬 <span class="nav-icon-label">Chat Now</span></button>
   </div>
 </nav>
 
@@ -816,14 +829,18 @@ function buildSystemPrompt() {
     "5. If they ask to see all listings on the page, output exactly: SHOW_ALL_LISTINGS\n" +
     "6. If they ask to see listing cards in the chat, output exactly: SHOW_LISTING_CARDS\n\n" +
     "MATCH FLOW (triggered when visitor says they want to find a matching home):\n" +
-    "- Ask ONE qualifying question at a time in this order: budget -> bedrooms -> preferred neighborhood -> timeline.\n" +
-    "- After collecting all four answers, compare them against the CURRENT LIVE LISTINGS below.\n" +
-    "- Identify listings that match: price <= budget, beds >= requested bedrooms, address contains neighborhood if specified.\n" +
+    "- Ask ONE qualifying question at a time: budget -> bedrooms -> preferred neighborhood -> timeline.\n" +
+    "- After all four answers, compare against the CURRENT LIVE LISTINGS listed below.\n" +
+    "- Identify matches: price <= budget, beds >= requested bedrooms, address contains neighborhood if given.\n" +
     "- Respond with 1-2 sentences explaining which listings match and why.\n" +
-    "- Then on its own line output exactly: SHOW_MATCHED_CARDS: followed by comma-separated UUIDs of matching listings.\n" +
-    "  Example: SHOW_MATCHED_CARDS:uuid-one,uuid-two\n" +
-    "- Only include UUIDs that appear in the listings list below. Never invent UUIDs.\n" +
-    "- If no listings match the criteria, say so honestly, suggest adjusting, then output SHOW_LISTING_CARDS.\n" +
+    "- Then on its own line output SHOW_MATCHED_CARDS: followed by comma-separated UUIDs.\n" +
+    "- CRITICAL UUID RULES:\n" +
+    "  * Copy each UUID EXACTLY as it appears in the listings list below — character for character.\n" +
+    "  * UUIDs are in the format xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (36 characters with hyphens).\n" +
+    "  * NEVER shorten, paraphrase, or invent UUIDs. Do not use addresses or names as UUIDs.\n" +
+    "  * Example of correct output: SHOW_MATCHED_CARDS:550e8400-e29b-41d4-a716-446655440001,550e8400-e29b-41d4-a716-446655440006\n" +
+    "  * Example of WRONG output (never do this): SHOW_MATCHED_CARDS:142-maple-st,87-oak-ave\n" +
+    "- If no listings match, say so, suggest adjusting criteria, then output SHOW_LISTING_CARDS.\n" +
     "- After matched cards appear, ask: Would you like to book a showing for any of these?\n\n" +
     "RULES:\n" +
     "- Never make up listings. Only reference the ones provided below.\n" +
@@ -898,13 +915,27 @@ function bookFromCard(uuid) {
 
 // ── MATCHED LISTING CARDS (filtered by UUID list from Claude) ─
 function aMatchedCards(uuids) {
-  // Filter allListings to only those whose UUID appears in the match list
+  // Primary: match by exact UUID
   var matched = allListings.filter(function(l) {
-    return uuids.indexOf(l.uuid) !== -1;
+    return uuids.some(function(u) {
+      return u.trim().toLowerCase() === (l.uuid || "").trim().toLowerCase();
+    });
   });
 
+  // Fallback: if no UUID matches, try matching by address slug
+  // Handles cases where Claude shortens UUIDs to address-style strings
+  if (matched.length === 0 && uuids.length > 0) {
+    matched = allListings.filter(function(l) {
+      var addrSlug = (l.address || "").toLowerCase().replace(/[^a-z0-9]+/g, "-");
+      return uuids.some(function(u) {
+        var uSlug = u.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-");
+        return addrSlug.indexOf(uSlug) !== -1 || uSlug.indexOf(addrSlug.substring(0, 8)) !== -1;
+      });
+    });
+  }
+
+  // Final fallback: show all listings if still nothing matched
   if (!matched || matched.length === 0) {
-    // No valid UUIDs found — fall back to all listings
     aListCards();
     return;
   }
@@ -922,8 +953,9 @@ function aMatchedCards(uuids) {
     var c = document.createElement("div"); c.className = "chat-listing-card";
     var sq = l.sqft ? Number(l.sqft).toLocaleString() : "N/A";
     c.innerHTML =
-      '<div style="background:' + bgs[idx % bgs.length] + ';height:80px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:2rem;margin-bottom:10px;">' +
-        (l.emoji || "🏡") +
+      '<div style="background:' + bgs[idx % bgs.length] + ';height:80px;border-radius:8px;' +
+      'display:flex;align-items:center;justify-content:center;font-size:2rem;margin-bottom:10px;">' +
+        (l.emoji || "\uD83C\uDFE1") +
       '</div>' +
       '<div class="clc-price">' + fmtPrice(l.price) + '</div>' +
       '<div class="clc-addr">' + escH(l.address) + ", " + escH(l.city || CONFIG.city) + '</div>' +
